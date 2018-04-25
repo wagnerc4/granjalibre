@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+
+  <title>{{rs['unescape'](rs['header'])}}</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="shortcut icon" href="css/favicon.ico">
+  <link rel="stylesheet" href="css/font-awesome.min.css">
+  <link rel="stylesheet" href="css/prism.css">
+  <link rel="stylesheet" href="css/codeflask.css">
+  <link rel="stylesheet" href="css/bootstrap.min.css">
+  <link rel="stylesheet" href="css/bootstrap-select.min.css">
+  <!--link rel="stylesheet" href="css/bootstrap-submenu.min.css"-->
+  <!--link rel="stylesheet" href="css/jquery.treeTable.css" /-->
+  <link rel="stylesheet" href="css/monthly.css">
+  <style>
+    body {padding-top: 60px;}
+
+    .resumen td:not(:first-child), .resumen_ajax td:not(:first-child) {
+      text-align:right; vertical-align:top;}
+    .resumen th:not(:first-child), .resumen_ajax th:not(:first-child) {
+      text-align:right; vertical-align:top;}
+    .resumen thead th, .resumen_ajax thead th {
+      background-color: #fff; cursor:pointer;}
+    .resumen tbody td span, .resumen_ajax tbody td span {
+      cursor:pointer;}
+    .resumen tbody td span.strong, .resumen_ajax tbody td span.strong {
+      font-weight: bold; cursor:default;}
+    .resumen tbody td span.red_filled {
+      color: red; font-weight: bold; cursor:default;}
+    .resumen tbody td span.red_empty:empty::before {
+      color: red; font-size: 20px; font-weight: bold; content: "- - - -"; cursor:default;}
+
+.navbar-brand {line-height:12px; padding-top:20px; padding-bottom:5px;}
+.navbar-brand small {display:block; font-size:10px;}
+
+.dropdown-menu {z-index: 10000;}
+
+.tab-pane:-webkit-full-screen {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+}
+.tab-pane:-moz-full-screen {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+}
+.tab-pane:-ms-fullscreen {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+}
+.tab-pane:fullscreen {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+}
+.tab-pane:-webkit-full-screen { overflow-y: auto; }
+.tab-pane:-moz-full-screen { overflow-y: auto; }
+.tab-pane:-ms-fullscreen { overflow-y: auto; }
+.tab-pane:fullscreen { overflow-y: auto; }
+
+.lateral_div {
+	position: fixed;
+	z-index: 2000;
+	right: 1em;
+	width: 20em;
+	padding: .5em;
+	overflow: hidden;
+	-webkit-transform: translateX(17.5em);
+	-moz-transform: translateX(17.5em);
+	-ms-transform: translateX(17.5em);
+	transform: translateX(17.5em);
+	-webkit-transition: -webkit-transform 0.5s ease;
+	-moz-transition: -moz-transform 0.5s ease;
+	-ms-transition: -ms-transform 0.5s ease;
+	transition: transform 0.5s ease;
+	-webkit-overflow-scrolling: touch;
+}
+
+.lateral_div.active {
+	-moz-transform: translateY(0);
+	-webkit-transform: translateY(0);
+	-ms-transform: translateY(0);
+	transform: translateY(0);
+}
+
+#tc_div {top: 3.5em;}
+
+#calculator_div {top: 6.5em;}
+
+/* RESUMENS GRAPH */
+.axis--x path { display: none; }
+.line {fill: none; stroke: steelblue; stroke-width: 1px;}
+/*
+.xline {stroke:black; stroke-width:2px;}
+.xtext {stroke-width:0.5px;}
+*/
+.zoom {cursor: move; fill: none; pointer-events: all;}
+
+/* PRODUCTION GRAPH */
+text {
+  font: 10px sans-serif;
+  text-anchor: middle;
+  pointer-events: none;
+}
+
+circle {
+  cursor: pointer;
+}
+
+.node circle {
+  fill: rgb(31, 119, 180);
+  fill-opacity: .25;
+  stroke: rgb(31, 119, 180);
+  stroke-width: 1px;
+}
+
+.node_active circle {
+  stroke: red;
+  stroke-width: 3px;
+}
+
+.child circle {
+  fill: #ff7f0e;
+  fill-opacity: 1;
+}
+
+.child_feed circle {
+  fill: red;
+}
+
+.templink {
+  fill: none;
+  stroke: red;
+  stroke-width: 3px;
+}
+
+/* TREE GRAPH */
+.name {
+  font-weight: bold;
+}
+
+.about {
+  /*fill: #777;*/
+  font-size: smaller;
+}
+
+.link {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+
+/* graph */
+/*
+svg {font: 10px sans-serif;}
+
+.axis path, .axis line {
+  fill: none;
+  stroke: grey;
+  stroke-width: 1px;
+  shape-rendering: crispEdges;
+}
+
+.x.axis line {stroke: lightgrey;}
+.x.axis .minor {stroke-opacity: .5;}
+.x.axis path {display: none;}
+.line0 {fill: none; stroke: red; stroke-width: 1px;}
+.line1 {fill: none; stroke: steelblue; stroke-width: 1px;}
+.brush .extent {stroke: #fff; fill-opacity: .125; shape-rendering:
+crispEdges;}
+.xline {stroke:black; stroke-width:2px;}
+.xtext {stroke-width:0.5px;}
+.zoom {cursor: move; fill: none; pointer-events: all;}
+*/
+
+/* autocomplete, menu */
+/*
+.menu button {margin:1px; padding:0; cursor:pointer;}
+
+.suggestionsBox {
+  display: none;
+  position: absolute;
+  margin: 0;
+  padding: 0;
+  width: 275px;
+  background-color: #3e3e3e;
+  -moz-border-radius: 7px;
+  -webkit-border-radius: 7px;
+  border: 2px solid #000;
+  color: #fff;
+  z-index:1200;
+}
+
+.suggestionsBox li {
+  margin: 0 0 3px;
+  padding: 3px;
+  border: 1px solid #3e3e3e;
+  font-weight: bold;
+  /*list-style: none; */
+  cursor: pointer;
+}
+
+.suggestionsBox li:hover { background-color: #659CD8; }
+*/
+  </style>
+  <script src="js/d3.min.js"></script>
+  <script src="js/jsonfn.min.js"></script>
+  <script src="js/prism.js"></script>
+  <script src="js/codeflask.js"></script>
+  <script src="js/spin.min.js"></script>
+  <script src="js/screenfull.min.js"></script>
+  <script src="js/FileSaver.min.js"></script>
+  <script src="js/jquery-2.2.4.min.js"></script>
+  <script src="js/bootstrap.min.js"></script>
+  <script src="js/bootstrap-select.min.js"></script>
+  <!--script src="js/bootstrap-submenu.min.js"></script-->
+  <script src="js/typeahead.min.js"></script>
+  <script src="js/jquery.treeTable.min.js"></script>
+  <script src="js/jquery.simplePagination.js"></script>
+  <script src="js/jquery.stickytableheaders.min.js"></script>
+  <script src="js/jquery.blockUI.js"></script>
+  <script src="js/jquery.md5.min.js"></script>
+  <script src="js/monthly.js"></script>
+  <script src="js/utilities.js?v=1"></script>
+  <script>var token = "{{rs['token']}}";</script>
+
+</head>
+<body>
+
+%if rs['app']=='error':
+
+  <h2>Error en autenticacion de usuario!</h2>
+  <h2>{{rs['error']}}</h2>
+
+%elif rs['app']=='login':
+
+<form action="/{{rs['path']}}/" method="post" style="max-width: 330px; padding: 15px; margin: 0 auto;">
+  <h2>{{rs['unescape'](rs['header'])}}</h2>
+  <label for="email" class="sr-only">e-mail</label>
+  <input type="email" id="email" name="email" class="form-control" value=""
+         placeholder="e-mail . . ." autocapitalize="off" autocorrect="off" />
+  <label for="pass" class="sr-only">clave</label>
+  <input type="password" id="pass" name="pass" class="form-control" value=""
+         placeholder="clave . . ." />
+  <input type="hidden" name="token" />
+  <input type="submit" class="btn btn-lg btn-primary btn-block" value="ingresar" />
+</form>
+
+<script>
+  $("form").submit(function() {
+    this[1].value = $.md5(this[1].value);
+    this[2].value = token;
+    $.blockUI();
+    return true;
+  });
+</script>
+
+%elif rs['app']=='main':
+
+<script>
+  var db_url = "/{{rs['path']}}/db";
+
+  var logo = "vaca.png";
+
+  var print_header = '<h1 style="display:inline">Granja Libre</h1>' +
+                     '<br />pagina web: http://granjalibre.com';
+
+  // DATEPICKER
+  var date_index = 0;
+  $(document).on("click", ".date", function(){
+    var $self=$(this);
+    if (!$self.next().is("div.monthly")) {
+      $self.attr({"id":"input_date"+date_index, "autocomplete":"off"})  // , "readonly":"readonly"
+           .after('<div id="picker' + date_index + '" class="monthly" style="z-index:1000;"></div>')
+           .next().monthly({mode: "picker",
+                            weekStart: "Mon",
+                            monthNames: ["ene", "feb", "mar", "abr", "may", "jun",
+                                         "jul", "ago", "sep", "oct", "nov", "dic"],
+                            dayNames: ["DOM","LUN","MAR","MIE","JUE","VIE","SAB"],
+                            setWidth: "250px",
+                            target: "#input_date"+date_index,
+                            showTrigger: "#input_date"+date_index,
+                            startHidden: true});
+      date_index = date_index + 1;
+    }
+    var pos = $self.position();
+    $self.next().css("left", pos.left-10+"px");
+    $self.next().show();
+  });
+
+
+  $(document).ready(function(){
+    // SUBMENU
+//    $("[data-submenu]").submenupicker();
+
+    // TABS
+    $("ul.navbar-nav").on("click", "a", function(e) {
+      var text = $(this).text(),
+          href = $(this).attr("href"),
+          hrefs = $.map($("ul.nav-tabs:eq(0) a"),
+                        function(a){ return $(a).attr("href"); });
+      if (href != "#") { 
+        $("ul.navbar-nav li").not(this).removeClass("active");
+        if (hrefs.indexOf(href) < 0) {
+          var li = '<li><a href="'+href+'" data-toggle="tab">'+text+'</a></li>';
+          $("ul.nav-tabs:eq(0) button:eq(0)").before(li);
+        }
+        $("ul.nav-tabs:eq(0) li").removeClass("active");
+        $("ul.nav-tabs:eq(0) a[href='"+href+"']").parent().addClass("active");
+      }
+    });
+
+    $("ul.nav-tabs:eq(0)").on("click", "a", function(e) {
+      var href = $(this).attr("href");
+      $("ul.navbar-nav li").removeClass("active");
+      $("ul.navbar-nav a[href='"+href+"']").click();
+    });
+
+    $("ul.nav-tabs:eq(0) button[name='refresh']").click(function(){
+      $(".buttons:visible").find("button, input[type='submit']").eq(0).click();
+    });
+
+    $("ul.nav-tabs:eq(0) button[name='print']").click(function(){
+      var $a = $("ul.nav-tabs:eq(0) li.active a"),
+          $div = $($a.attr("href")).clone(),
+          inputs = $.map($div.find(".buttons input[type='text']"),
+                         function(i){ return $(i).val(); })
+                      .filter(function(x){ if (x != "") return true; }),
+          title = $a.text() + " " + inputs.join(", ");
+      $("div.modal, .buttons, div.paginate", $div).remove(); 
+      newTab({"title":'<h2>'+title+'</h2>', "content":$div.html()});
+    });
+
+    $("ul.nav-tabs:eq(0) button[name='fullscreen']").click(function(){
+      if (screenfull.enabled) {
+        screenfull.request($($("ul.nav-tabs:eq(0) li.active a").attr("href"))[0]);
+      }
+    });
+
+    $("ul.nav-tabs:eq(0) button[name='close']").click(function(){
+      $("ul.nav-tabs:eq(0) li.active").remove();
+      $("ul.nav-tabs:eq(0) li:last a").click();
+    });
+
+    // LATERAL DIV CLASS
+    $(".lateral_div").each(function() {
+      var $this = $(this);
+      // Events
+      $this.on("click", function(ev) {
+        ev.stopPropagation();
+      }).on("---toggle", function() {
+        if ($this.hasClass("active")) $this.triggerHandler("---hide");
+        else $this.triggerHandler("---show");
+      }).on("---show", function() {
+        $this.addClass("active");
+      }).on("---hide", function() {
+        $this.removeClass("active");
+      });
+    });
+
+    $(".lateral_div").on("focusin", "input, textarea", function(e){ e.stopPropagation(); });
+
+    // CALCULATOR
+    $("#calculator_div button").on("click", function(ev) {
+      ev.preventDefault();
+      ev.stopPropagation();
+      $("#calculator_div").trigger("---toggle");
+    });
+
+    $("#calculator_div input").keydown(function(e){
+      if (e.keyCode == 13) {
+        var $txt = $("#calculator_div textarea"),
+            value = this.value;
+        this.value = eval(value);
+        $txt.val(value + " = " + formatCurrency(this.value,2) + "\n" + $txt.val());
+      }
+    });
+  });
+</script>
+
+<nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header" style="padding-left: 10px">
+      <button type="button" class="navbar-toggle pull-left" data-toggle="collapse" data-target=".navbar-collapse">  <!-- aria-expanded="false" -->
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="#">
+        {{rs['unescape'](rs['header'])}}
+        <small>{{rs['unescape'](rs['worker'])}}</small>
+      </a>
+    </div>
+    <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+      <ul class="nav navbar-nav navbar-right">
+      %if len(rs['menus']['forms']) > 0:
+        <li class="dropdown active">
+          <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
+            Formularios <span class="caret"></span>
+          </a>
+          <ul class="dropdown-menu">
+          %last = rs['menus']['forms'][0][0]
+          %for m in rs['menus']['forms']:
+            %if last != m[0]:
+              %last = m[0]
+            <li role="separator" class="divider"></li>
+            %end
+            <li><a href="#{{m[2]}}" data-toggle="tab">{{m[1]}}</a></li>
+          %end
+          </ul>
+        </li>
+      %end
+      %if len(rs['menus']['resumens']) > 0:
+        <li class="dropdown">
+          <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
+            Resumenes <span class="caret"></span>
+          </a>
+          <ul class="dropdown-menu">
+          %last = rs['menus']['resumens'][0][0]
+          %for m in rs['menus']['resumens']:
+            %if last != m[0]:
+              %last = m[0]
+            <li role="separator" class="divider"></li>
+            %end
+            <li><a href="#{{m[2]}}" data-toggle="tab">{{m[1]}}</a></li>
+          %end
+          </ul>
+        </li>
+      %end
+      %if len(rs['menus']['accounting']) > 0:
+        <li class="dropdown">
+          <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
+            Contabilidad <span class="caret"></span>
+          </a>
+          <ul class="dropdown-menu">
+          %for m in rs['menus']['accounting']:
+            <li><a href="#{{m[2]}}" data-toggle="tab">{{m[1]}}</a></li>
+          %end
+          </ul>
+        </li>
+      %end
+      %if len(rs['menus']['settings']) > 0:
+        <li class="dropdown">
+          <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
+            Ajustes <span class="caret"></span>
+          </a>
+          <ul class="dropdown-menu">
+          %for m in rs['menus']['settings']:
+            <li><a href="#{{m[2]}}" data-toggle="tab">{{m[1]}}</a></li>
+          %end
+          </ul>
+        </li>
+      %end
+      </ul>
+    </div>
+  </div>
+</nav>
+<div class="container">
+  <div id="calculator_div" class="lateral_div">
+    <div class="input-group">
+      <span class="input-group-btn">
+        <button class="btn btn-success"><span class="fa fa-calculator"></span></button>
+      </span>
+      <input type="text" class="form-control" placeholder="calculadora . . .">
+    </div>
+    <textarea class="form-control" style="height:20em; width:16em; margin-left:3em;"></textarea>
+  </div>
+  <div class="tab-content">
+    <ul class="nav nav-tabs">
+      <li class="active"><a href="#forms_calendar" data-toggle="tab">Calendario</a></li>
+      <button class="btn btn-default" style="margin-left:5px" name="refresh">
+        <span class="fa fa-refresh"></span>
+      </button>
+      <button class="btn btn-default" style="margin-left:5px" name="print">
+        <span class="fa fa-print"></span>
+      </button>
+      <button class="btn btn-default" style="margin-left:5px" name="fullscreen" data-fullscreen="box">
+        <span class="fa fa-square-o"></span>
+      </button>
+      <button class="btn btn-default" style="margin-left:5px" name="close">
+        <span class="fa fa-times"></span>
+      </button>
+    </ul>
+  %for f in rs['files']:
+    %include('modules/' + f + '.html')
+  %end
+    <!-- RESUMENS DIVS -->
+    <script id="resumens_data">
+    var resumens_data = {{!rs['resumens_data']}};
+
+    for (var k in resumens_data) {
+      var code = resumens_data[k]['code'],
+          $div = $('<div class="tab-pane" id="'+code+'"></div>'),
+          $t = $('<table class="table table-striped resumen">' +
+                 '  <caption></caption>' +
+                 '  <thead></thead>' +
+                 '  <tbody></tbody>' +
+                 '  <tfoot></tfoot>' +
+                 '</table>');
+      $t.data("code", code);
+      set_table($t, {"buttons": true, "all_lines": true,
+                     "defs": resumens_data[k]['defs'].replace(/\\\\/g, '')});
+      $t.find("caption h2").html(resumens_data[k]['title']);
+      if (!resumens_data[k]["d1"]) $t.find("caption input:eq(0)").hide();
+      if (!resumens_data[k]["d2"]) $t.find("caption input:eq(1)").hide();
+      if (!resumens_data[k]["v"]) $t.find("caption input:eq(2)").hide();
+      if (!resumens_data[k]["graph_type"]) $t.find("caption button[name='graph']").hide();
+      $div.append($t);
+      $("#resumens_data").before($div);
+    }
+    </script>
+  </div>
+</div>
+
+%end
+
+</body>
+</html>
