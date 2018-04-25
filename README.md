@@ -1,10 +1,10 @@
 # granjalibre
 Animals production application
 
-Packages needed:
-    postgresql python3-psycopg2 python3-tz python3-bottle
+Packages needed: postgresql python3-psycopg2 python3-tz python3-bottle
 
 Install:
+
     createuser -s root
     createdb granjalibre
     psql granjalibre -f db_main_tables.sql
