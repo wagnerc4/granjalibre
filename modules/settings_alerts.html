@@ -1,0 +1,199 @@
+<div class="tab-pane" id="settings_alerts">
+  <table id="crons_table" class="table table-striped">
+    <caption class="form-inline">
+      <h2 style="display:inline;">CRONS</h2>
+      <select class="form-control" id="crons_select"></select>
+      <!--button class="btn btn-danger">borrar</button>
+      <button class="btn btn-primary">ingresar</button-->
+    </caption>
+    <thead>
+      <tr>
+        <th><input type="text" class="form-control" placeholder="minutes . . ." /></th>
+        <th><input type="text" class="form-control" placeholder="hours . . ." /></th>
+        <th><input type="text" class="form-control" placeholder="days . . ." /></th>
+        <th><input type="text" class="form-control" placeholder="months . . ." /></th>
+        <th><input type="text" class="form-control" placeholder="weekdays . . ." /></th>
+      </tr>
+      <tr>
+        <td>minutes: <strong>0-59</strong></td>
+        <td>hours: <strong>0-23</strong></td>
+        <td>days: <strong>1-31</strong></td>
+        <td>months: <strong>1-12</strong></td>
+        <td>weekdays: <strong>0-6</strong> (0=sunday)</td>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><th>*</th><td colspan="4">every value</td></tr>
+      <tr><th>,</th><td colspan="4">list of values (0,30 = the 0 and 30th minute)</td></tr>
+      <tr><th>-</th><td colspan="4">range of values (0-5 = minutes 0,1,2,3,4,5)</td></tr>
+      <tr><th>/</th><td colspan="4">step values (*/5 = every 5 minutes; 0-30/2 = every 2 minutes between 0 abd 30 minutes)</td></tr>
+    </tbody>
+  </table>
+  <!-- Nav tabs -->
+  <ul id="alerts_nav" class="nav nav-tabs">
+    <li role="tab" class="active"><a data-toggle="tab" href="#alerts_sms">SMS</a></li>
+    <li role="tab"><a data-toggle="tab" href="#alerts_calendar">Calendario</a></li>
+    <li role="tab"><a data-toggle="tab" href="#alerts_notify">Notificaciones</a></li>
+    <li><button class="btn btn-info">ver</button></li>
+  </ul>
+  <!-- Tab panels -->
+  <div id="alerts_tabs" class="tab-content">
+    <div role="tabpanel" class="tab-pane active" id="alerts_sms">
+      <table class="table table-striped">
+        <thead>
+          <form action="#" style="display:table-row;">
+            <td width="200"><select class="form-control" name="cron"></select></td>
+            <td width="200"><select class="form-control" name="query"></select></td>
+            <td width="600"><select class="selectpicker form-control" name="phones" title="telefonos . . ." data-icon-base="fa" data-tick-icon="fa-check" multiple></select></td>
+            <td><input type="submit" class="btn btn-primary" value="ingresar" /></td>
+          </form>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div role="tabpanel" class="tab-pane" id="alerts_calendar">
+      <table class="table table-striped">
+        <thead>
+          <form action="#" style="display:table-row;">
+            <td width="200"><select class="form-control" name="cron"></select></td>
+            <td width="200"><select class="form-control" name="query"></select></td>
+            <td width="600"><select class="selectpicker form-control" name="workers" title="usuarios . . ." data-icon-base="fa" data-tick-icon="fa-check" multiple></select></td>
+            <td><input type="submit" class="btn btn-primary" value="ingresar" /></td>
+          </form>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div role="tabpanel" class="tab-pane" id="alerts_notify">
+      <table class="table table-striped">
+        <thead>
+          <form action="#" style="display:table-row;">
+            <td width="200"><select class="form-control" name="cron"></select></td>
+            <td width="200"><select class="form-control" name="query"></select></td>
+            <td width="600"><select class="selectpicker form-control" name="workers" title="usuarios . . ." data-icon-base="fa" data-tick-icon="fa-check" multiple></select></td>
+            <td><input type="submit" class="btn btn-primary" value="ingresar" /></td>
+          </form>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+$("#crons_select").change(function(){
+  var values = $(this).val().split(" ");
+  $("#crons_table").find("thead input:eq(0)").val(values[0]).end()
+                   .find("thead input:eq(1)").val(values[1]).end()
+                   .find("thead input:eq(2)").val(values[2]).end()
+                   .find("thead input:eq(3)").val(values[3]).end()
+                   .find("thead input:eq(4)").val(values[4]);
+});
+
+function set_alerts_crons(rs) {
+  var rows = ['<option value="">cron . . .</option>'];
+  for (var k in rs) rows.push('<option>' + rs[k] + '</option>');
+  $("#crons_select").html(rows.join(""));
+  $("#alerts_sms table thead select[name='cron']").html(rows.join(""));
+  $("#alerts_calendar table thead select[name='cron']").html(rows.join(""));
+  $("#alerts_notify table thead select[name='cron']").html(rows.join(""));
+}
+
+function set_alerts_querys(rs) {
+  var rows = ['<option value="">consulta . . .</option>'];
+  for (var k in rs) rows.push('<option>' + rs[k] + '</option>');
+  $("#alerts_sms table thead select[name='query']").html(rows.join(""));
+  $("#alerts_calendar table thead select[name='query']").html(rows.join(""));
+  $("#alerts_notify table thead select[name='query']").html(rows.join(""));
+}
+
+function set_alerts_phones(rs) {
+  var rows = [];
+  for (var k in rs) {
+    rows.push('<optgroup label="' + rs[k][0] + '">');
+    for (var kk in rs[k][1]) {
+      var info = rs[k][1][kk].split('_');
+      rows.push('<option data-title="'+info[0]+'" data-subtext="'+info[1]+'">'+info[0]+'</option>');
+    }
+    rows.push('</optgroup>');
+  }
+  $("#alerts_sms table thead select[name='phones']").html(rows.join(""));
+}
+
+function set_alerts_workers(rs) {
+  var rows = '<option>' + rs.join('</option><option>') + '</option>';
+  $("#alerts_calendar table thead select[name='workers']").html(rows);
+  $("#alerts_notify table thead select[name='workers']").html(rows);
+}
+
+function set_alerts_rows(rs) {
+  var rows=[], len=rs.length;
+  for (var i=0; i<len; ++i) {
+    rs[i][3] = rs[i][3].join(", ");
+    rows.push('<tr data-id="' + rs[i][0] + '">');
+    rows.push('<td>', rs[i].slice(1).join('</td><td>'), '</td>');
+    rows.push('<td><button class="btn btn-danger delete_alert">borrar</button></td>');
+    rows.push('</tr>');
+  }
+  return rows.join("");
+}
+
+$("ul.nav a[href='#settings_alerts']").click(function(){
+  var pd = new FormData();
+  pd.append("action", "select_alerts_data");
+  request(db_url, pd, function(rs){
+    set_alerts_crons(rs["crons"]);
+    set_alerts_querys(rs["querys"]);
+    set_alerts_phones(rs["phones"]);
+    set_alerts_workers(rs["workers"]);
+    $(".selectpicker").selectpicker("refresh");
+  });
+});
+
+$("#alerts_nav button").click(function(){
+  var id = $("#alerts_nav li.active a").attr("href"),
+      pd = new FormData();
+  pd.append("action", "select_alerts");
+  pd.append("type", id.replace(/#alerts_/, ''));
+  request(db_url, pd, function(rs){
+    $(id).find("table tbody").html(set_alerts_rows(rs));
+  });
+});
+
+$("#alerts_tabs table form").submit(function(){
+  var $div = $(this).closest("div.tab-pane"),
+      pd = new FormData(this);
+  pd.append("action", "insert_alert");
+  pd.append("type", $div.attr("id").replace(/alerts_/, ''));
+  pd.append("items", JSONfn.stringify($div.find("table thead select.selectpicker").val()));
+  request(db_url, pd, function(rs){
+    $div.find("table tbody").html(set_alerts_rows(rs));
+  });
+  return false;
+});
+
+$("#alerts_tabs table > tbody").on("click", ".delete_alert",  function(){
+  var $tr = $(this).parents("tr"),
+      conf = confirm("Desea borrar alerta con consulta: " + $tr.find("td:eq(1)").text() + "?");
+  if (conf) {
+    var $div = $(this).closest("div.tab-pane"),
+        pd = new FormData();
+    pd.append("action", "delete_alert");
+    pd.append("id", $tr.data("id"));
+    pd.append("type", $div.attr("id").replace(/alerts_/, ''));
+    request(db_url, pd, function(rs){
+      $div.find("table tbody").html(set_alerts_rows(rs));
+    });
+  }
+});
+
+
+
+/*
+$('#myAlert').on('closed.bs.alert', function () {
+  // do something…
+});
+*/
+
+
+</script>

@@ -1,0 +1,44 @@
+<div class="tab-pane" id="forms_parameters_pens">
+  <div class="buttons">
+    <h2>Produccion Corrales</h2>
+  </div>
+  <form action="#">
+    <table class="table table-striped" width="100%">
+      <thead>
+        <tr><td>Lugar</td><td>Galeron</td><td>Corrales</td><td>Acciones</td></tr>
+        <tr>
+          <td><input type="text" name="place" class="form-control" required="required" /></td>
+          <td><input type="text" name="house" class="form-control" required="required" autocomplete="off" /></td>
+          <td><input type="text" name="pens" class="form-control" required="required" autocomplete="off" /></td>
+          <td><input type="submit" class="btn btn-primary" value="ingresar" /></td>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </form>
+</div>
+
+<script>
+// PENS
+function set_parameters_pens(rs){
+  $("#forms_parameters_pens table > tbody").html($.map(rs, function(row){
+    return '<tr>' +
+           '  <td>' + row.join('</td><td>') + '</td>' +
+           '  <td></td>' +
+           '</tr>';
+  }).join(""));
+}
+
+$("nav li a[href='#forms_parameters_pens']").click(function(){
+  var pd = new FormData();
+  pd.append("action", "select_pens");
+  request(db_url, pd, set_parameters_pens);
+});
+
+$("#forms_parameters_pens > form").submit(function () {
+  var pd = new FormData(this);
+  pd.append("action", "insert_pens");
+  request(db_url, pd, set_parameters_pens);
+  return false;
+});
+</script>

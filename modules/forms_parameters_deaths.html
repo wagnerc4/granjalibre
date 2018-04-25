@@ -1,0 +1,79 @@
+<div class="tab-pane" id="forms_parameters_deaths">
+  <div class="buttons">
+    <h2>Causas Salida</h2>
+  </div>
+  <form action="#">
+    <table class="table table-striped" width="100%">
+      <thead>
+        <tr><td>Causa</td><td>Tipo</td><td>Activa</td><td>Acciones</td></tr>
+        <tr>
+          <td><input type="text" name="death" class="form-control" required="required" autocomplete="off" /></td>
+          <td><select name="type" class="form-control"><option value="adult">Adulto</option>
+                                                       <option value="young">Joven</option></td>
+          <td></td>
+          <td><input type="submit" class="btn btn-primary" value="ingresar" /></td>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </form>
+</div>
+
+<script>
+// DEATHS
+var parametersDic = {
+  "young": "joven",
+  "adult": "adulto"
+}
+
+function set_parameters_deaths(rs){
+  $("#forms_parameters_deaths table > tbody").html($.map(rs, function(row){
+    row[2] = parametersDic[row[2]];
+    return '<tr data-id="'+row[0]+'">' +
+           '  <td>' + row.slice(1).join('</td><td>') + '</td>' +
+           '  <td><button class="btn btn-danger update">actualizar</button></td>' +
+           '</tr>';
+  }).join(""));
+}
+
+function set_deaths_list(rs){
+  $("#adultdeathsList, #youngdeathsList").empty();
+  for (var k in rs) {
+    if (rs[k][3] > 0) {
+      if (rs[k][2] == "adult") {
+        $("#adultdeathsList").append("<option>"+rs[k][1]+"</option>");
+      } else {
+        $("#youngdeathsList").append("<option>"+rs[k][1]+"</option>");
+      }
+    }
+  }
+}
+
+$("nav li a[href='#forms_parameters_deaths']").click(function(){
+  var pd = new FormData();
+  pd.append("action", "select_deaths");
+  request(db_url, pd, set_parameters_deaths);
+});
+
+$("#forms_parameters_deaths > form").submit(function () {
+  var pd = new FormData(this);
+  pd.append("action", "insert_death");
+  request(db_url, pd, function(rs){
+    set_parameters_deaths(rs);
+    set_deaths_list(rs);
+  });
+  return false;
+});
+
+$("#forms_parameters_deaths table > tbody").on("click", "button.update", function(){
+  var pd = new FormData(),
+      $tr = $(this).parents("tr");
+  pd.append("action", "update_death");
+  pd.append("id", $tr.data("id"));
+  request(db_url, pd, function(rs){
+    set_parameters_deaths(rs);
+    set_deaths_list(rs);
+  });
+  return false;
+});
+</script>

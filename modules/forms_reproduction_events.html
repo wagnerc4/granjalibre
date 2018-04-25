@@ -1,0 +1,1129 @@
+<div class="tab-pane" id="forms_reproduction_events">
+  <p style="margin-left:25px;">
+    <input type="text" id="a_search" placeholder="animal . . ." autocomplete="off" />
+    <input type="button" value="ver" />
+    <a href="#a_insert">ingresar animal</a> |
+    <a href="#a_insert_semen">ingresar semen</a>
+  </p>
+  <div id="a_events" style="float:left; width:300px; margin-left:25px;">
+    <strong>Animal: <span id="a_name"></span></strong><br />
+    <a href="#a_genealogy">arbol</a> |
+    <a href="#a_graph">grafico</a> |
+    <a href="#a_eartag">arete</a> |
+    <a href="#a_semen">semen</a><br /><br />
+    <strong>Eventos:</strong><br />
+    <!--a href="#a_events_variables">variables</a> |
+    <a href="#a_events_constants">constantes</a> |
+    <a href="#a_events_all">todos</a-->
+    <div style="margin-left:25px;"></div>
+  </div>
+  <div id="a_history" style="float:left; width:600px;">
+    <strong>Historia:</strong>
+    <table class="table table-striped">
+      <thead>
+        <tr><th width="100">Paridad</th>
+            <th width="100">Fecha</th>
+            <th width="50">Dias</th>
+            <th width="120">Evento</th>
+            <th width="250">Datos</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ANIMAL HISTORY MODAL -->
+<div id="history_modal" class="modal fade" role="dialog" tabindex="-1">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+        <h3 class="modal-title"></h3>
+      </div>
+      <div class="modal-body">
+        <select></select>
+        <table class="table table-striped">
+          <thead>
+            <tr><th width="100">Paridad</th>
+                <th width="100">Fecha</th>
+                <th width="50">Dias</th>
+                <th width="120">Evento</th>
+                <th width="250">Datos</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <!--div class="modal-footer">
+        <button class="btn btn-info">imprimir</button>
+      </div-->
+    </div>
+  </div>
+</div>
+
+
+<!-- ANIMAL EVENTS MODAL -->
+<div id="animal_events_modal" class="modal fade" role="dialog" tabindex="-1" style="z-index:1500">
+  <div class="modal-dialog" role="document">  <!-- modal-lg -->
+    <div class="modal-content">
+      <div class="modal-header">
+        <button class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+        <h3 class="modal-title">Eventos<span></span></h3>
+      </div>
+      <div class="modal-body" style="min-height:260px;">
+
+<!-------------------- INSERT ANIMAL -------------------->
+
+  <div id="a_insert" style="display:none;">
+    <strong>Ingresar Animal sin Historia:</strong>
+    <form action="#">
+      <input type="text" name="a_entry" class="date" placeholder="ingreso . . ." size="25" /><br />
+      <input type="text" name="a_name" placeholder="nombre . . ." />
+      <input type="text" name="a_pedigree" placeholder="pedigree . . ." /><br />
+      <input type="text" class="farm_search" name="farm_search" placeholder="granja camada . . ." autocomplete="off" />
+      <input type="text" id="a_litter" name="a_litter" placeholder="camada . . ." />
+      <input type="button" value="validar camada" /><br />
+      <input type="text" name="a_birth" class="date" placeholder="parto . . ." size="25" />
+      <label for="racesList">razas</label>
+      <select id="racesList" name="a_race"></select><br />
+      <label for="sex1">macho</label>
+      <input type="radio" id="sex1" name="a_sex" value="male" />
+      <label for="sex2">hembra</label>
+      <input type="radio" id="sex2" name="a_sex" value="female" checked="checked" />
+      <input type="text" name="a_parity" placeholder="partos . . ." size="6" /><br />
+    </form><br /><br />
+    <strong>Ingresar Animales con Historia:</strong>
+    <p id="animals_old" style="margin-left:25px;"></p>
+  </div>
+  <!-------------------- INSERT SEMEN -------------------->
+  <div id="a_insert_semen" style="display:none;">
+    <strong>Ingresar Semen</strong>
+    <input type="text" id="a_insert_semen_ts" class="date" placeholder="ingreso . . ." size="25" /><br />
+    Animales:
+    <p id="animals_semen" style="margin-left:25px;"></p>
+  </div>
+  <!------------------- ANIMAL GENEALOGY ------------------------>
+  <!--div id="a_genealogy"></div-->
+  <!------------------- ANIMAL CONSTANT EVENTS ------------------------>
+  <!--div id="a_graph">
+    <strong>Tiempo:</strong>
+    <a href="">1 mes</a>, 
+    <a href="">1 año</a>, 
+    <a href="">todo</a>
+  </div-->
+  <!-------------------- SEMEN -------------------->
+  <div id="a_semen" style="display:none;">
+    <strong>Semen</strong>
+    <a href="#" id="semen_status">modificar estado (disponible para otras granjas)</a>
+    <br /><br />
+    Granjas con semen disponible:
+    <p id="semen_farms" style="margin-left:25px;"></p>
+  </div>
+  <!------------------- EVENTS FORMS ------------------------>
+  <div id="ev_sale_semen" style="display:none;">
+    <form action="#" class="ev_variable" data-animal="">
+      <strong>Salida Semen</strong><br />
+      <input type="text" name="ts" class="date" placeholder="salida . . ." size="25" />
+    </form>
+  </div>
+  <div id="ev_sale" style="display:none;">
+    <form action="#" class="ev_variable" data-animal="">
+      <strong>Salida</strong><br />
+      <input type="text" name="ts" class="date" placeholder="salida . . ." size="25" />
+      <select id="adultdeathsList" name="death"></select><br />
+      <input type="text" class="farm_search" name="farm_search" placeholder="granja (opcional) . . ." autocomplete="off" />
+    </form>
+  </div>
+  <!------------ REPRODUCTIVE FORMS --------------->
+  <div id="ev_heat" style="display:none;">
+    <form action="#" class="ev_variable" data-animal="">
+      <strong>Celo Sin Servicio</strong><br />
+      <input type="text" name="ts" class="date" placeholder="celo . . ." size="25" />
+      <select name="lordosis"><option>lordosis</option>
+                              <option>1</option><option>2</option>
+                              <option>3</option><option>4</option>
+                              <option>5</option></select><br />
+    </form>
+  </div>
+  <div id="ev_service" style="display:none;">
+    <form action="#" class="ev_variable" data-animal="">
+      <strong>Servicio</strong><br />
+      <input type="text" name="ts" class="date" placeholder="servicio . . ." size="25" /><br />
+      <input type="text" id="male_search" name="male" placeholder="macho . . ." autocomplete="off" /><br />
+      <input type="text" name="matings" placeholder="cubriciones . . ." />
+      <select name="lordosis"><option>lordosis</option>
+                              <option>1</option><option>2</option>
+                              <option>3</option><option>4</option>
+                              <option>5</option></select>
+      <select name="quality"><option>calidad</option>
+                             <option>1</option><option>2</option>
+                             <option>3</option><option>4</option>
+                             <option>5</option></select><br />
+      <br />
+    </form>
+  </div>
+  <div id="ev_check_pos" style="display:none;">
+    <form action="#" class="ev_variable" data-animal="">
+      <strong>Diagnostico +</strong><br />
+      <input type="text" name="ts" class="date" placeholder="diagnostico . . ." size="25" />
+      <select name="test"><option>metodo</option>
+                          <option value="us">ultra-sonido</option>
+                          <option value="px">palpacion</option>
+                          <option value="vs">visual</option></select><br />
+    </form>
+  </div>
+  <div id="ev_check_neg" style="display:none;">
+    <form action="#" class="ev_variable" data-animal="">
+      <strong>Diagnostico -</strong><br />
+      <input type="text" name="ts" class="date" placeholder="diagnostico . . ." size="25" />
+      <select name="test"><option>metodo</option>
+                          <option value="us">ultra-sonido</option>
+                          <option value="px">palpacion</option>
+                          <option value="vs">visual</option>
+                          <option value="re">repeticion</option></select><br />
+    </form>
+  </div>
+  <div id="ev_abortion" style="display:none;">
+    <form action="#" class="ev_variable" data-animal="">
+      <strong>Aborto</strong><br />
+      <input type="text" name="ts" class="date" placeholder="aborto . . ." size="25" />
+      <label for="abortionInduction">Inducido</label>
+      <input type="checkbox" id="abortionInduction" name="inducted" /><br />
+    </form>
+  </div>
+  <div id="ev_farrow" style="display:none;">
+    <form action="#" class="ev_variable" data-animal="">
+      <strong>Parto</strong><br />
+      <input type="text" name="ts" class="date" placeholder="parto . . ." size="25" /><br />
+      <input type="text" name="litter" placeholder="camada . . ." size="7" />
+      <input type="text" name="males" placeholder="machos . . ." size="7" />
+      <input type="text" name="females" placeholder="hembras . . ." size="7" />
+      <input type="text" name="weight" placeholder="peso . . ." size="7" /><br />
+      <input type="text" name="deaths" placeholder="muertos . . ." size="7" />
+      <input type="text" name="mummies" placeholder="momias . . ." size="7" />
+      <input type="text" name="hernias" placeholder="hernias . . ." size="7" />
+      <input type="text" name="cryptorchids" placeholder="criptorquideos . . ." size="7" /><br />
+      <label for="farrowDystocia">distocia</label>
+      <input type="checkbox" id="farrowDystocia" name="dystocia" />
+      <label for="farrowRetention">retencion</label>
+      <input type="checkbox" id="farrowRetention" name="retention" />
+      <label for="farrowInduction">inducido</label>
+      <input type="checkbox" id="farrowInduction" name="inducted" />
+      <label for="farrowAsisted">asistido</label>
+      <input type="checkbox" id="farrowAsisted" name="asisted" /><br />
+    </form>
+  </div>
+  <div id="ev_death" style="display:none;">
+    <form action="#" class="ev_variable" data-animal="">
+      <strong>Baja</strong><br />
+      <input type="text" name="ts" class="date" placeholder="baja . . ." size="25" /><br />
+      <select id="youngdeathsList" name="death"></select>
+      <input type="text" name="animals" placeholder="animales . . ." size="7" /><br />
+    </form>
+  </div>
+  <div id="ev_foster" style="display:none;">
+    <form action="#" class="ev_variable" data-animal="">
+      <strong>Adopcion -</strong><br />
+      <input type="text" name="ts" class="date" placeholder="adopcion . . ." size="25" /><br />
+      <input type="text" class="adoption_search" name="mother" placeholder="hacia . . ." autocomplete="off"/>
+      <input type="text" name="animals" placeholder="animales . . ." size="7" />
+      <input type="text" name="weight" placeholder="peso . . ." size="5" /><br />
+    </form>
+  </div>
+  <div id="ev_adoption" style="display:none;">
+    <form action="#" class="ev_variable" data-animal="">
+      <strong>Adopcion +</strong><br />
+      <input type="text" name="ts" class="date" placeholder="adopcion . . ." size="25" /><br />
+      <input type="text" class="adoption_search" name="mother" placeholder="desde . . ." autocomplete="off"/>
+      <input type="text" name="animals" placeholder="animales . . ." size="7" />
+      <input type="text" name="weight" placeholder="peso . . ." size="5" /><br />
+    </form>
+  </div>
+  <div id="ev_partial_wean" style="display:none;">
+    <form action="#" class="ev_variable" data-animal="">
+      <strong>Destete Parcial</strong><br />
+      <input type="text" name="ts" class="date" placeholder="destete . . ." size="25" /><br />
+      <input type="text" name="animals" placeholder="animales . . ." size="7" />
+      <input type="text" name="weight" placeholder="peso . . ." size="5" /><br />
+    </form>
+  </div>
+  <div id="ev_wean" style="display:none;">
+    <form action="#" class="ev_variable" data-animal="">
+      <strong>Destete</strong><br />
+      <input type="text" name="ts" class="date" placeholder="destete . . ." size="25" /><br />
+      <input type="text" name="animals" placeholder="animales . . ." size="7" />
+      <input type="text" name="weight" placeholder="peso . . ." size="5" /><br />
+    </form>
+  </div>
+  <div id="ev_semen" style="display:none;">
+    <form action="#" class="ev_variable" data-animal="">
+      <strong>Estraccion</strong><br />
+      <input type="text" name="ts" class="date" placeholder="estraccion . . ." size="25" /><br />
+      <input type="text" name="volumen" placeholder="volumen . . ." />
+      <input type="text" name="concentration" placeholder="concentracion . . ." /><br />
+      <select name="motility"><option>motilidad</option>
+                              <option>1</option><option>2</option>
+                              <option>3</option><option>4</option>
+                              <option>5</option></select>
+      <!--label for="semenGrumos">grumos</label><br />
+      <input type="checkbox" id="semenGrumos" name="grumos" /-->
+      <input type="text" name="dosis" placeholder="dosis . . ." />
+    </form>
+  </div>
+  <!-------------------------------------------------------------->
+  <div id="ev_ubication" style="display:none;">
+    <form action="#" class="ev_variable" data-animal="">
+      <strong>Ubicacion</strong><br />
+      <input type="text" name="ts" class="date" placeholder="movimiento . . ." size="25" />
+      <input type="text" name="ubication" placeholder="ubicacion . . ." /><br />
+    </form>
+  </div>
+  <div id="ev_feed" style="display:none;">
+    <form action="#" class="ev_constant" data-animal="">
+      <strong>Alimentacion</strong><br />
+      <input type="text" name="ts" class="date" placeholder="alimentacion . . ." size="25" />
+      <input type="text" name="weight" placeholder="peso . . ." size="5" /><br />
+    </form>
+  </div>
+  <div id="ev_condition" style="display:none;">
+    <form action="#" class="ev_constant" data-animal="">
+      <strong>Condicion</strong><br />
+      <input type="text" name="ts" class="date" placeholder="evaluacion . . ." size="25" /><br />
+      <select name="condition"><option>condicion</option>
+                               <option>1</option><option>1.5</option>
+                               <option>2</option><option>2.5</option>
+                               <option>3</option><option>3.5</option>
+                               <option>4</option><option>4.5</option>
+                               <option>5</option></select>
+      <input type="text" name="weight" placeholder="peso . . ." size="5" />
+      <input type="text" name="backfat" placeholder="grasa . . ." size="5" /><br />
+    </form>
+  </div>
+  <div id="ev_milk" style="display:none;">
+    <form action="#" class="ev_constant" data-animal="">
+      <strong>Leche</strong><br />
+      <input type="text" name="ts" class="date" placeholder="evaluacion . . ." size="25" /><br />
+      <input type="text" name="weight" placeholder="peso . . ." size="5" />
+      <select name="quality"><option>calidad</option>
+                             <option>1</option><option>2</option>
+                             <option>3</option><option>4</option>
+                             <option>5</option></select><br />
+    </form>
+  </div>
+  <div id="ev_dry" style="display:none;">
+    <form action="#" class="ev_variable" data-animal="">
+      <strong>Secado</strong><br />
+      <input type="text" name="ts" class="date" placeholder="secado . . ." size="25" /><br />
+    </form>
+  </div>
+  <div id="ev_temperature" style="display:none;">
+    <form action="#" class="ev_constant" data-animal="">
+      <strong>Temperatura</strong><br />
+      <input type="text" name="ts" class="date" placeholder="evaluacion . . ." size="25" />
+      <input type="text" name="temperature" placeholder="grados . . ." size="5" /><br />
+    </form>
+  </div>
+  <div id="ev_treatment" style="display:none;">
+    <form action="#" class="ev_variable" data-animal="">
+      <strong>Tratamiento</strong><br />
+      <input type="text" name="ts" class="date" placeholder="tratamiento . . ." size="25" /><br />
+      <input type="text" name="treatment" placeholder="medicamento . . ." />
+      <input type="text" name="dose" placeholder="dosis (ml,mg,g,ui)/kg . . ." /><br />
+      <select name="frecuency"><option>frecuencia (horas)</option>
+                               <option>6</option><option>8</option>
+                               <option>12</option><option>24</option>
+                               <option>48</option><option>72</option></select>
+      <input type="text" name="days" placeholder="dias . . ." size="3" />
+      <select name="route"><option>ruta</option>
+                               <option>im</option><option>iv</option>
+                               <option>ip</option><option>sc</option>
+                               <option>po</option></select><br />
+    </form>
+  </div>
+  <div id="ev_palpation" style="display:none;">
+    <form action="#" class="ev_variable" data-animal="">
+      <strong>Palpacion</strong><br />
+      <input type="text" name="ts" class="date" placeholder="palpacion . . ." size="25" /><br />
+      <textarea name="palpation" cols="35" rows="5" placeholder="palpacion . . .">
+      </textarea><br />
+    </form>
+  </div>
+  <div id="ev_note" style="display:none;">
+    <form action="#" class="ev_variable" data-animal="">
+      <strong>Nota</strong><br />
+      <input type="text" name="ts" class="date" placeholder="nota . . ." size="25" /><br />
+      <textarea name="note" cols="35" rows="5" placeholder="nota . . .">
+      </textarea><br />
+    </form>
+  </div>
+
+<!----------------------------------------------------------->
+
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary">ingresar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ====================================== -->
+<!-- End HTML code.  Begin JavaScript code. -->
+
+<script>
+////////////////// PARAMETERS ////////////////
+$(document).ready(function(){
+  var pd = new FormData();
+  pd.append("action", "select_races");
+  request(db_url, pd, function(rs){
+    $("#racesList").html();
+    for (var k in rs) {
+      if (rs[k][2] > 0) {
+        $("#racesList").append("<option>"+rs[k][1]+"</option>");
+      }
+    }
+  });
+  var pd = new FormData();
+  pd.append("action", "select_deaths");
+  request(db_url, pd, function(rs){
+    $("#adultdeathsList, #youngdeathsList").html();
+    for (var k in rs) {
+      if (rs[k][3] > 0) {
+        if (rs[k][2] == "adult") {
+          $("#adultdeathsList").append("<option>"+rs[k][1]+"</option>");
+        } else {
+          $("#youngdeathsList").append("<option>"+rs[k][1]+"</option>");
+        }
+      }
+    }
+  });
+});
+
+
+////////////////// ANIMALS ////////////////
+/*
+$("#menu").on("click", "#repro_animals", function(){
+  $("#a_events, #a_events div, #a_history").show();
+});
+*/
+
+/*
+$("#a_search").setSearch(function(val, fn){
+  var pd = new FormData();
+  pd.append("action", "getAnimal");
+  pd.append("val", val);
+  request(db_url, pd, fn);
+});
+*/
+
+$("#a_search").typeahead({
+  delay: 800, items: 20,
+  source: function(query, process) {
+    var pd = new FormData();
+    pd.append("action", "getAnimal");
+    pd.append("val", query);
+    request(db_url, pd, function(rs){
+      var rows=[];
+      for (var k in rs) rows.push({"name": (rs[k][1]?'*':'') + rs[k][0]});
+      process(rows);
+    });
+  }
+});
+
+$("#male_search").typeahead({
+  delay: 800, items: 20,
+  source: function(query, process) {
+    var pd = new FormData();
+    pd.append("action", "getMale");
+    pd.append("val", query);
+    request(db_url, pd, function(rs){
+      var rows=[];
+      for (var k in rs) rows.push({"name": (rs[k][1]?'*':'') + rs[k][0]});
+      process(rows);
+    });
+  }
+});
+
+$(".adoption_search").typeahead({
+  delay: 800, items: 20,
+  source: function(query, process) {
+    var pd = new FormData();
+    pd.append("action", "getFemaleAdoptive");
+    pd.append("val", query);
+    request(db_url, pd, function(rs){
+      var rows=[];
+      for (var k in rs) rows.push({"name": (rs[k][1]?'*':'') + rs[k][0]});
+      process(rows);
+    });
+  }
+});
+
+$(".farm_search").typeahead({
+  delay: 800, items: 20,
+  source: function(query, process) {
+    var pd = new FormData();
+    pd.append("action", "getFarmActivity");
+    pd.append("val", query);
+    request(db_url, pd, function(rs){
+      var rows=[];
+      for (var k in rs) rows.push({"name": (rs[k][1]?'*':'') + rs[k][0]});
+      process(rows);
+    });
+  }
+});
+
+
+/////////////////////////////////////////////////////
+$("#a_litter").next().click(function(e, ui) {
+  var pd = new FormData();
+  pd.append("action", "validateLitter");
+  pd.append("farm_search", $("#a_litter").prevAll("input[type=text]").val());
+  pd.append("litter", $("#a_litter").val());
+  request(db_url, pd, function(rs){
+    var $a_birth = $("#racesList").prevAll("input[name=a_birth]");
+    if (rs) {
+      $a_birth.val(new Date(rs[0] * 1000).toSql());
+      $("#racesList").val(rs[1]);
+    } else {
+      $a_birth.val("");
+    }
+  });
+});
+
+$("a[href$='a_insert']").click(function(){
+  var pd = new FormData();
+  pd.append("action", "getAnimalsOld");
+  request(db_url, pd, function(rs){
+    var txt=[];
+    for (var k in rs) {
+      txt.push("<a href='#' class='animal_old'>" +
+               "<span style='display:none'>" + rs[k][0] + "</span>" +
+                rs[k][1] + " -> " + rs[k][2] +"</a>");
+    }
+    $("#animals_old").html(txt.join("<br>"));
+    var $modal = $("#animal_events_modal");
+    $modal.data("action", "a_insert");
+    $modal.find("div.modal-header h3").text("Ingresar Animal");
+    $modal.find("div.modal-body div").hide();
+    $("#a_insert").show();
+    $modal.modal("show");
+  });
+});
+
+$("#animals_old").on("click", "a.animal_old", function(){
+  $("#animal_events_modal").modal("hide");
+  var pd = new FormData(), id = $(this).find("span").text();
+  pd.append("action", "insertAnimalOld");
+  pd.append("id", id);
+  $("#a_search").val($(this).text().replace(id, '').replace(/\s->.+/, ''));
+  request(db_url, pd, function(rs){ alert("Animal ingresado!"); });
+});
+
+$("a[href$='a_insert_semen']").click(function(){
+  var pd = new FormData();
+  pd.append("action", "getAnimalsSemen");
+  request(db_url, pd, function(rs){
+    var txt=[];
+    for (var k in rs) {
+      txt.push("<a href='#' class='animal_semen'>" +
+               "<span style='display:none'>" + rs[k][0] + "</span>" +
+                rs[k][1] + " -> " + rs[k][2] +"</a>");
+    }
+    $("#animals_semen").html(txt.join("<br>"));
+    var $modal = $("#animal_events_modal");
+    $modal.find("div.modal-header h3").text("Ingresar Semen");
+    $modal.find("div.modal-body div").hide();
+    $("#a_insert_semen").show();
+    $modal.modal("show");
+  });
+});
+
+$("#animals_semen").on("click", "a.animal_semen", function(){
+  $("#animal_events_modal").modal("hide");
+  var pd = new FormData(), id = $(this).find("span").text();
+  pd.append("action", "insertAnimalSemen");
+  pd.append("id", id);
+  pd.append("ts", $("#a_insert_semen_ts").val());
+  $("#a_search").val($(this).text().replace(id, '').replace(/\s->.+/, ''));
+  request(db_url, pd, function(rs){ alert("Semen ingresado!"); });
+});
+
+
+/////////////////////////////////////////////////////
+$("a[href$='a_genealogy']").click(function(){
+  var pd = new FormData();
+  pd.append("action", "getGenealogy");
+  pd.append("animal", $("#a_name").text());
+  request(db_url, pd, function(rs){
+    var treeData = {"id":String(rs[0][0])};
+    for (var k in rs) {
+      var node = treeData,
+          path = rs[k][3].replace(/^_/, "").split("_");
+      for (i=0; i < path.length; i++) {
+        if (node["id"] != path[i]) {
+          node = node["parents"].filter(function(p) {
+            return p["id"] == path[i];
+          })[0];
+        }
+      }
+      if (rs[k][1]){
+        node["parents"] = [{"id":rs[k][1]},
+                           {"id":rs[k][2]}];
+      }
+      node["name"] = rs[k][4];
+      node["race"] = rs[k][5];
+      node["born"] = new Date(rs[k][6] * 1000).toSql();
+      node["died"] = rs[k][7]?new Date(rs[k][7] * 1000).toSql():"";
+    }
+
+    //console.log(treeData);
+
+    $("#graph_modal svg").empty();
+
+    setTree("#graph_modal", treeData);
+
+    var $modal = $("#graph_modal");
+    $modal.find("div.modal-header h3").text("Genealogia");
+    $modal.modal("show");
+
+  });
+});
+
+$("a[href$='a_graph']").click(function(){
+  //var d1 = date.setHours(0, 0, 0, 0), d2 = d1 + 86400000;
+  //var pd = [{"name": "action", "value": "get_temperatures"},
+  //          {"name": "d1", "value": d1/1000},
+  //          {"name": "d2", "value": d2/1000}];
+  var pd = new FormData();
+  pd.append("action", "get_temperatures");
+  pd.append("animal", $("#a_name").text());
+  request(db_url, pd, function(rs){
+    var data=[], temperature=0, milk=0;
+    for (var k in rs) {
+      temperature = rs[k][1] || temperature;
+      milk = rs[k][2] || milk;
+      data.push([rs[k][0], temperature, milk, rs[k][3]]);
+    }
+
+    $("#graph_modal svg").empty();
+
+    if (data.length) setGraph("#graph_modal", data);
+
+    var $modal = $("#graph_modal");
+    $modal.find("div.modal-header h3").text("Grafico");
+    $modal.modal("show");
+
+  });
+});
+
+$("a[href$='a_eartag']").click(function(){
+  var pd = new FormData();
+  pd.append("action", "getEartag");
+  pd.append("animal", $("#a_name").text());
+  request(db_url, pd, function(rs){
+    var data = prompt("Actualizar Arete:", rs?rs[0]:'');
+    if (data) {
+      var pd = new FormData();
+      pd.append("action", "setEartag");
+      pd.append("animal", data);
+      request(db_url, pd, function(rs){ alert("Arete ingresado!"); });
+    }
+  });
+});
+
+$("a[href$='a_semen']").click(function(){
+  var pd = new FormData();
+  pd.append("action", "getSemenFarms");
+  pd.append("animal", $("#a_name").text());
+  request(db_url, pd, function(rs){
+    $("#semen_farms").html(rs.map(function(v){ return v[0]; }).join("<br>"));
+    var $modal = $("#animal_events_modal");
+    $modal.find("div.modal-header h3").text("Semen");
+    $modal.find("div.modal-body div").hide();
+    $("#a_semen").show();
+    $modal.modal("show");
+  });
+});
+
+$("#semen_status").click(function(){
+  $("#animal_events_modal").modal("hide");
+  var pd = new FormData();
+  pd.append("action", "setSemenStatus");
+  pd.append("animal", $("#a_name").text());
+  request(db_url, pd, function(rs){ alert("Estado modificado!"); });
+});
+
+
+////////////////// EVENTS ////////////////
+var ev_constant = [], ev_variable = [];
+
+var eventsDic = {
+  "ev_entry_female": {"name":"ingreso hembra", "cols":["raza", "camada", "nacimiento", "pedigree"]},
+  "ev_entry_male": {"name":"ingreso macho", "cols":["raza", "camada", "nacimiento", "pedigree"]},
+  "ev_entry_semen": {"name":"ingreso semen", "cols":["raza", "camada", "nacimiento", "pedigree"]},
+  "ev_sale_semen": {"name":"salida semen", "cols":[]},
+  "ev_sale": {"name":"salida", "cols":["causa"]},
+  "ev_heat": {"name":"celo sin servicio", "cols":["lordosis"]},
+  "ev_service": {"name":"servicio", "cols":["padrote", "cubriciones",
+                                            "lordosis", "calidad"]},
+  "ev_check_pos": {"name":"diagnostico +", "cols":["examen"]},
+  "ev_check_neg": {"name":"diagnostico -", "cols":["examen"]},
+  "ev_abortion": {"name":"aborto", "cols":["inducido"]},
+  "ev_farrow": {"name":"parto", "cols":["camada", "machos", "hembras", "peso",
+                            "muertos", "momias", "hernias", "criptorquideos",
+                            "distocia", "retencion", "inducido", "asistido"]},
+  "ev_death": {"name":"baja", "cols":["causa", "animales"]},
+  "ev_foster": {"name":"adopcion -", "cols":["hacia", "animales", "peso"]},
+  "ev_adoption": {"name":"adopcion +", "cols":["desde", "animales", "peso"]},
+  "ev_partial_wean": {"name":"destete parcial", "cols":["animales", "peso"]},
+  "ev_wean": {"name":"destete", "cols":["animales", "peso"]},
+  "ev_semen": {"name":"estraccion", "cols":["volumen", "concentracion",
+                                            "motilidad", "dosis"]},
+  "ev_ubication": {"name":"ubicacion", "cols":["ubicacion"]},
+  "ev_feed": {"name":"alimentacion", "cols":["peso"]},
+  "ev_condition": {"name":"condicion", "cols":["condicion", "peso", "grasa"]},
+  "ev_milk": {"name":"leche", "cols":["peso", "calidad"]},
+  "ev_dry": {"name":"secado", "cols":[]},
+  "ev_temperature": {"name":"temperatura", "cols":["temperatura"]},
+  "ev_treatment": {"name":"tratamiento", "cols":["medicamento", "dosis",
+                                           "frecuencia", "dias", "ruta"]},
+  "ev_palpation": {"name":"palpacion", "cols":["palpacion"]},
+  "ev_note": {"name":"nota", "cols":["nota"]}
+};
+
+function setRules(rules){
+  var txt = [];
+  for (var k in rules) {
+    txt.push("<p><a href='#" + rules[k] + "' class='ev_insert'>");
+    txt.push("Ingresar " + eventsDic[rules[k]]["name"] + "</a></p>");
+  }
+  if (ev_constant.length) {
+    txt.push("<p><a href='#' class='ev_constant_delete'>");
+    txt.push("Borrar " + eventsDic[ev_constant[ev_constant.length - 1][1]]["name"] + "</a></p>");
+  }
+  if (ev_variable.length) {
+    txt.push("<p><a href='#' class='ev_variable_delete'>");
+    txt.push("Borrar " + eventsDic[ev_variable[ev_variable.length - 1][1]]["name"] + "</a></p>");
+  }
+  $("#a_events > div").html(txt.join(""));
+}
+
+function setHistory($table, rs){
+  var rows=[], lastDate=0;
+  for (var i=0; i < rs.length; ++i) {
+    var parity="", days="", date=new Date(rs[i][2] * 1000);
+    switch (rs[i][1]){
+      case "ev_entry_female":
+      case "ev_entry_male":
+      case "ev_entry_semen":
+        var birth_ts = rs[i][4].match(/\d{9,10}/) * 1000;
+        rs[i][4] = rs[i][4].replace(/(\d{9,10})/, new Date(birth_ts).toSql());
+      break;
+      case "ev_service":
+        lastDate = rs[i][2];
+      break;
+      case "ev_farrow":
+        parity = rs[i][3];
+        days = getDays(date - new Date(lastDate * 1000));
+        lastDate = rs[i][2];
+      break;
+      case "ev_check_pos":
+      case "ev_check_neg":
+      case "ev_abortion":
+      case "ev_death":
+      case "ev_foster":
+      case "ev_adoption":
+      case "ev_partial_wean":
+      case "ev_wean":
+      case "ev_semen":
+        days = getDays(date - new Date(lastDate * 1000));
+      break;
+    }
+    rows.push([rs[i][0], parity, date.toSql(), days, eventsDic[rs[i][1]]["name"],
+               $.map(rs[i][4].split("_"), function(v, k){
+                 return v?eventsDic[rs[i][1]]["cols"][k]+": "+v:"";
+               }).join(", ")]);
+  }
+  $table.find("tbody").html($.map(rows.reverse(), function(row){          
+    return '<tr data-id="'+row[0]+'"><td>' + row.slice(1).join('</td><td>') + '</td></tr>';
+  }).join(""));
+}
+
+$("#a_search").next().click(function(){
+  var pd = new FormData(), animal = $("#a_search").val().replace(/\s->.+/, '');
+  pd.append("action", "getAllHistory");
+  pd.append("animal", animal);
+  $("#a_name").text(animal);
+  request(db_url, pd, function(rs){
+    ev_constant = rs["ev_constant"];
+    ev_variable = rs["ev_variable"];
+    setRules((rs["rules"] && rs["rules"]!="ev_")?rs["rules"].split("|"):[]);
+    setHistory($("#a_history > table"), ev_variable);
+  });
+});
+
+$("#a_events > div").on("click", ".ev_insert", function(e){
+  var href = $(this).attr("href"),
+      title = $(e.target).text(),
+      $modal = $("#animal_events_modal");
+  $modal.data("action", href.replace(/#/, ''));
+  $modal.data("animal", $("#a_name").text());
+  $modal.find("div.modal-header h3").text(title);
+  $modal.find("div.modal-body div").hide();
+  $(href).show();
+  $modal.modal("show");
+});
+
+$("#animal_events_modal form").submit(function(){
+  var pd = new FormData(this),
+      $modal = $("#animal_events_modal");
+  pd.append("action", $modal.data("action"));
+  if ($modal.data("action") == "a_insert") {
+    var animal = this.a_name.value;
+    request(db_url, pd, function(rs){
+      $modal.modal("hide");
+      $("#a_search").val(animal);
+    });
+  } else {
+    pd.append("animal", $modal.data("animal"));
+    request(db_url, pd, function(rs){
+      $modal.modal("hide");
+      if ($("#forms_reproduction_events").is(":visible")){
+        if ($modal.find("form").attr("class") == "ev_constant") {
+          ev_constant.push(rs["ev_constant"]);
+          // setGraph(ev_constant);
+        } else {
+          ev_variable.push(rs["ev_variable"]);
+          setHistory($("#a_history > table"), ev_variable);
+        }
+        setRules((rs["rules"]!="ev_")?rs["rules"].split("|"):[]);
+      } else {
+        alert("Ingresado!");
+      }
+    });
+  }
+  return false;
+});
+
+$("#animal_events_modal div.modal-footer button").click(function() {
+  $("#" + $("#animal_events_modal").data("action") + " form").submit();
+});
+
+$("#a_events > div").on("click", ".ev_constant_delete, .ev_variable_delete", function(){
+  var conf = confirm("Desea Borrar el Ultimo Evento?");
+  if (conf){
+    var pd = new FormData(), ev_class = $(this).attr("class");
+    pd.append("action", "ev_delete");
+    pd.append("animal", $("#a_name").text());
+    if (ev_class == "ev_constant_delete") {
+      pd.append("id", ev_constant[ev_constant.length-1][0]);
+    } else {
+      pd.append("id", ev_variable[ev_variable.length-1][0]);
+    }
+    request(db_url, pd, function(rs){
+      if (ev_class == "ev_constant_delete") {
+        ev_constant.splice(ev_constant.length-1, 1);
+        //  setGraph();
+      } else {
+        ev_variable.splice(ev_variable.length-1, 1);
+        setHistory($("#a_history > table"), ev_variable);
+      }
+      setRules(rs["rules"]?rs["rules"].split("|"):[]);
+    });
+  }
+});
+
+
+////////////////// RESUMENS ANIMAL HISTORY ////////////////
+
+$(function() {
+  $("table > tbody").on("click", "span.history", function() {
+    var pd = new FormData(),
+        animal = $(this).text();
+    pd.append("action", "getHistory");
+    pd.append("animal", animal);
+    request(db_url, pd, function(rs){
+      var $modal = $("#history_modal"),
+          rules = rs["rules"].split("|"),
+          tmp = ['<option>evento</option>'];
+      for (var k in rules) {
+        tmp.push('<option value="' + rules[k] + '">');
+        tmp.push("Ingresar " + eventsDic[rules[k]]["name"] + '</option>');
+      }
+      $("#a_search").val(animal);
+      $modal.data("animal", animal);
+      $modal.find("div.modal-header h3").text("Animal: "+animal);
+      $modal.find("div.modal-body select").html(tmp.join(""));
+      setHistory($modal.find("div.modal-body table"), rs["ev_variable"]);
+      $modal.modal("show");
+    });
+  });
+});
+
+$("#history_modal div.modal-body").on("change", "select", function(e){
+  var id = $(this).val(),
+      title = $(this).find("option:selected").text(),
+      $modal = $("#animal_events_modal");
+  $modal.data("action", id);
+  $modal.data("animal", $("#history_modal").data("animal"));
+  $modal.find("div.modal-header h3").text(title);
+  $modal.find("div.modal-body div").hide();
+  $("#"+id).show();
+  $modal.modal("show");
+});
+
+
+////////////////// GRAPHS ////////////////
+
+function setGraph(id, data){
+  var svg = d3.select(id + " svg"),
+      margin = {top: 10, right: 40, bottom: 100, left: 40},
+      margin2 = {top: 430, right: 10, bottom: 20, left: 40},
+      width = +svg.attr("width") - margin.left - margin.right,
+      height = +svg.attr("height") - margin.top - margin.bottom,
+      height2 = +svg.attr("height") - margin2.top - margin2.bottom;
+
+  var x = d3.scaleTime().range([0, width]),
+      y0 = d3.scaleLinear().range([height, 0]),
+      y1 = d3.scaleLinear().range([height, 0]),
+      xx = d3.scaleTime().range([0, width]),
+      yy0 = d3.scaleLinear().range([height2, 0]),
+      yy1 = d3.scaleLinear().range([height2, 0]);
+
+  x.domain(d3.extent(data, function(d) { return d[0]; }));
+  y0.domain([0, d3.max([data], function(d) { return d3.max(d, function(c) { return c[1]; }); })]);
+  y1.domain([0, d3.max([data], function(d) { return d3.max(d, function(c) { return c[2]; }); })]);
+  xx.domain(x.domain());
+  yy0.domain(y0.domain());
+  yy1.domain(y1.domain());
+
+  var xAxis = d3.axisBottom(x),
+      xAxis2 = d3.axisBottom(xx),
+      yAxisLeft = d3.axisLeft(y0),
+      yAxisRight = d3.axisRight(y1);
+
+  var brush = d3.brushX()
+      .extent([[0, 0], [width, height2]])
+      .on("brush end", brushed);
+
+  var zoom = d3.zoom()
+      .scaleExtent([1, Infinity])
+      .translateExtent([[0, 0], [width, height]])
+      .extent([[0, 0], [width, height]])
+      .on("zoom", zoomed);
+
+  var line0 = d3.line()
+        .x(function(d) { return x(d[0]); })
+	.y(function(d) { return y0(d[1]); }),
+      line1 = d3.line()
+        .x(function(d) { return x(d[0]); })
+        .y(function(d) { return y1(d[2]); }),
+      line2 = d3.line()
+        .x(function(d) { return xx(d[0]); })
+	.y(function(d) { return yy0(d[1]); }),
+      line3 = d3.line()
+        .x(function(d) { return xx(d[0]); })
+        .y(function(d) { return yy1(d[2]); });
+
+  svg.append("defs").append("clipPath")
+     .attr("id", "clip")
+     .append("rect")
+     .attr("width", width)
+     .attr("height", width);
+
+  var focus_layer = svg.selectAll(".focus")
+      .data([data]).enter()
+      .append("g")
+      .attr("class", "focus")
+      .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+  var labels = data.map(function(row){
+    if (row[3]) return [row[0], row[3]];
+  }).filter(function(x){ if (x) return true; });
+
+  var labels_layer = svg.selectAll(".label")
+      .data([labels]).enter()
+      .append("g")
+      .attr("class", "label")
+      .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+  var context_layer = svg.selectAll(".context")
+      .data([data]).enter()
+      .append("g")
+      .attr("class", "context")
+      .attr("transform", "translate("+ margin2.left +","+ margin2.top +")");
+
+  focus_layer.append("path")
+             .attr("class", "line0")
+             .attr("d", function(d) { return line0(d); });
+
+  focus_layer.append("path")
+             .attr("class", "line1")
+             .attr("d", function(d) { return line1(d); });
+
+  focus_layer.append("g")
+             .attr("class", "x axis")
+             .attr("transform", "translate(0, " + height + ")")
+             .call(xAxis);
+
+  focus_layer.append("g")
+             .attr("class", "y axis")
+             .style("fill", "red")
+             .call(yAxisLeft)
+             .append("text")
+             .attr("transform", "rotate(-90) translate(-150, -25)")
+             .text("Temperatura (Cº)");
+
+  focus_layer.append("g")
+             .attr("class", "y axis")
+             .attr("transform", "translate(" + width + ", 0)")
+             .style("fill", "steelblue")
+             .call(yAxisRight)
+             .append("text")
+             .attr("transform", "rotate(-90) translate(-150, 25)")
+             .text("Leche (Kg)");
+
+  labels_layer.selectAll(".xline")
+              .data(function(d) { return d; }).enter()
+              .append("line")
+              .attr("class", "xline")
+              .attr("x1", function(d) { return x(d[0]); })
+              .attr("x2", function(d) { return x(d[0]); })
+              .attr("y1", 0)
+              .attr("y2", height);
+
+  labels_layer.selectAll(".xtext")
+              .data(function(d) { return d; }).enter()
+              .append("text")
+              .attr("class", "xtext")
+              .attr("transform", "rotate(-90) translate(-250, 10)")
+              .attr("y", function(d) { return x(d[0]); })
+              .text(function(d) { return d[1]; });
+
+  context_layer.append("path")
+               .attr("class", "line0")
+               .attr("d", function(d) { return line2(d); });
+
+  context_layer.append("path")
+               .attr("class", "line1")
+               .attr("d", function(d) { return line3(d); });
+
+  context_layer.append("g")
+               .attr("class", "x axis")
+               .attr("transform", "translate(0," + height2 + ")")
+               .call(xAxis2);
+
+//  context_layer.append("g")
+//               .attr("class", "x brush")
+//               .call(brush)
+//               .selectAll("rect")
+//               .attr("y", -6)
+//               .attr("height", height2 + 7);
+
+  context_layer.append("g")
+      .attr("class", "brush")
+      .call(brush)
+      .call(brush.move, x.range());
+
+  svg.append("rect")
+      .attr("class", "zoom")
+      .attr("width", width)
+      .attr("height", height)
+      .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+      .call(zoom);
+
+  function brushed() {
+    if (d3.event.sourceEvent && d3.event.sourceEvent.type === "zoom") return;
+    var s = d3.event.selection || xx.range();
+    x.domain(s.map(xx.invert, xx));
+    focus_layer.select("path.line0")
+               .attr("clip-path", "url(#clip)")
+               .attr("d", function(d) { return line0(d); });
+    focus_layer.select("path.line1")
+               .attr("clip-path", "url(#clip)")
+               .attr("d", function(d) { return line1(d); });
+    focus_layer.select(".x.axis").call(xAxis)
+               .attr("clip-path", "url(#clip)");
+    labels_layer.selectAll(".xline")
+                .attr("clip-path", "url(#clip)")
+                .attr("x1", function(d) { return x(d[0]); })
+                .attr("x2", function(d) { return x(d[0]); });
+    labels_layer.selectAll(".xtext")
+                .attr("clip-path", "url(#clip)")
+                .attr("y", function(d) { return x(d[0]); });
+    svg.select(".zoom").call(zoom.transform, d3.zoomIdentity.scale(width / (s[1] - s[0]))
+       .translate(-s[0], 0));
+  }
+
+  function zoomed() {
+    if (d3.event.sourceEvent && d3.event.sourceEvent.type === "brush") return;
+    var t = d3.event.transform;
+    x.domain(t.rescaleX(xx).domain());
+    focus_layer.select("path.line0")
+               .attr("clip-path", "url(#clip)")
+               .attr("d", function(d) { return line0(d); });
+    focus_layer.select("path.line1")
+               .attr("clip-path", "url(#clip)")
+               .attr("d", function(d) { return line1(d); });
+    focus_layer.select(".x.axis").call(xAxis)
+               .attr("clip-path", "url(#clip)");
+    labels_layer.selectAll(".xline")
+                .attr("clip-path", "url(#clip)")
+                .attr("x1", function(d) { return x(d[0]); })
+                .attr("x2", function(d) { return x(d[0]); });
+    labels_layer.selectAll(".xtext")
+                .attr("clip-path", "url(#clip)")
+                .attr("y", function(d) { return x(d[0]); });
+    context_layer.select(".brush").call(brush.move, x.range().map(t.invertX, t));
+  }
+}
+
+
+function setTree(id, data){
+    var svg = d3.select(id + " svg"),
+        margin = {top: 20, right: 250, bottom: 20, left: 20},
+        width = +svg.attr("width") - margin.left - margin.right,
+        height = +svg.attr("height") - margin.top - margin.bottom,
+        g = svg.append("g")
+          .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    var treemap = d3.tree()
+        .separation(function(a, b){ return a.parent === b.parent ? 1 : .5; })
+        .size([height, width]);
+
+    var nodes = treemap(d3.hierarchy(data, function(d){ return d.parents; }));
+
+    var link = g.selectAll(".link")
+        .data(nodes.descendants().slice(1))
+        .enter().append("path")
+        .attr("class", "link")
+        .attr("d", function(d) {
+          return "M" + d.y + "," + d.x +
+                 "H" + d.parent.y + "V" + d.parent.x +
+                 (d.parent.children ? "" : "h" + margin.right);
+        });
+
+    var node = g.selectAll(".node")
+        .data(nodes.descendants())
+        .enter().append("g")
+        .attr("class", "node")
+        .attr("transform", function(d) { return "translate(" + d.y + "," + d.x + ")"; });
+
+    node.append("text")
+        .attr("class", "name")
+        .attr("x", 8)
+        .attr("y", -6)
+        .text(function(d) { return d.data.name + " –> " + d.data.race; });
+
+    node.append("text")
+        .attr("x", 8)
+        .attr("y", 8)
+        .attr("dy", ".71em")
+        .attr("class", "about lifespan")
+        .text(function(d) { return d.data.born + " / " + d.data.died; });
+}
+
+</script>

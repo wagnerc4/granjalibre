@@ -1,0 +1,116 @@
+<div class="tab-pane" id="forms_production_stock">
+  <div class="buttons">
+    <form action="#" class="form-inline">
+      <h2 style="display:inline;">Inventario Animales Produccion</h2>
+      <input type="text" name="d1" class="date form-control" placeholder="desde . . ." />
+      <input type="text" name="d2" class="date form-control" placeholder="hasta . . ." />
+      <input type="submit" class="btn btn-info" value="ver"/>
+    </form>
+  </div>
+  <table class="table table-striped resumen">
+    <thead></thead>
+    <tbody></tbody>
+    <tfoot></tfoot>
+  </table>
+</div>
+
+<!-- PRODUCTION STOCK MODAL -->
+<div id="production_stock_modal" class="modal fade" tabindex="-1" role="dialog">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h3 class="modal-title">Historia</h3>
+      </div>
+      <div class="modal-body">
+        <table class="table table-striped">
+          <thead></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+var group_events_dic = {
+  "g_ev_feeds": {"name":"alimentacion", "cols":["alimento", "ingreso", "salida"]},
+  "g_ev_stock": {"name":"inventario", "cols":["ingreso", "salida", "muerte", "causa"]},
+  "g_ev_stock_move": {"name":"traslado", "cols":["ingreso", "salida", "muerte", "causa"]},
+  "g_ev_weights": {"name":"pesaje", "cols":["animales", "peso"]},
+  "g_ev_diseases": {"name":"efermedad", "cols":["animales", "enfermedad", "medicacion"]},
+  "g_ev_notes": {"name":"nota", "cols":["nota"]}
+};
+
+set_table($("#forms_production_stock table"),
+          {"defs": [{"head":"Grupo", "foot":"count", "class":"strong"},
+                    {"head":"Corral Actual"},
+                    {"head":"Edad", "foot":"avg"},
+                    {"head":"Consumo", "foot":"sum"},
+                    {"head":"Inicial", "foot":"sum", "class":"no_format"},
+                    {"head":"Ingresos", "foot":"sum", "class":"no_format"},
+                    {"head":"Salidas", "foot":"sum", "class":"no_format"},
+                    {"head":"Muertes", "foot":"sum", "class":"no_format"},
+                    {"head":"Final", "foot":"sum", "class":"no_format"}]});
+
+function set_produ_stock(rs){  // pen, date, days, feed, initial_ingress_egress_deaths
+  var rows=[];
+  for (var k in rs) {
+    var stock = rs[k][4].split("_").map(function(v){ return parseInt(v || 0, 10); });
+    stock.push(stock[0] + stock[1] - stock[2] - stock[3]);
+    rows.push([rs[k][0], '<a class="group" href="#">'+rs[k][1]+'</span>',
+               rs[k][2], rs[k][3], stock[0], stock[1], stock[2], stock[3], stock[4]]);
+  }
+  set_table_body($("#forms_production_stock table"), rows, true, false);
+}
+
+$("#forms_production_stock form").submit(function(){
+  var pd = new FormData(this);
+  pd.append("action", "produ_stock");
+  request(db_url, pd, set_produ_stock);
+  return false;
+});
+
+$("#forms_production_stock > table > tbody").on("click", "a.group", function(){
+  var pd = new FormData(),
+      $tr = $(this).parents("tr"),
+      $modal = $("#production_stock_modal");
+  pd.append("action", "select_group_history");
+  pd.append("group_id", parseInt($tr.find("td:eq(0)").text(), 10));
+  pd.append("d1", $("#forms_production_stock form input[name='d1']").val());
+  pd.append("d2", $("#forms_production_stock form input[name='d2']").val());
+  request(db_url, pd, function(rs){  // id, table, date, data
+    for (var i in rs) {
+      rs[i][3] = $.map(rs[i][3].split("_"), function(v, k){
+                 return v?group_events_dic[rs[i][2]]["cols"][k]+": "+v:"";
+               }).join(", ");
+      rs[i][2] = group_events_dic[rs[i][2]]["name"];
+      rs[i].push('<button class="delete">borrar</button>');
+    }
+    $modal.find("div.modal-body > table > thead")
+      .html('<th>'+["Fecha", "Evento", "Informacion"].join('</th><th>')+'</th>');
+    $modal.find("div.modal-body > table > tbody").html($.map(rs, function(row){
+      return '<tr data-id="'+row[0]+'"><td>' + row.slice(1).join('</td><td>') + '</td></tr>';
+    }).join(""));
+    $modal.modal("show");
+  });
+});
+
+$("#production_stock_modal div.modal-body table > tbody").on("click", "button.delete", function(){
+  var $tr = $(this).parents("tr"),
+      conf = confirm("Desea borrar evento: " + $tr.find("td:eq(1)").text() +
+                     " del: " + $tr.find("td:eq(0)").text()+"?");
+  if (conf){
+    $("#production_stock_modal").modal("hide");
+    var pd = new FormData();
+    pd.append("action", "delete_group_event");
+    pd.append("id", $tr.data("id"));
+    pd.append("d1", $("#forms_production_stock form input[name='d1']").val());
+    pd.append("d2", $("#forms_production_stock form input[name='d2']").val());
+    request(db_url, pd, function(rs){
+      alert("Evento borrado!");
+      set_produ_stock(rs);
+    });
+  }
+});
+</script>

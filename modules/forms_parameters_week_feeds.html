@@ -1,0 +1,62 @@
+<div class="tab-pane" id="forms_parameters_week_feeds">
+  <div class="buttons">
+    <h2>Produccion Consumo / Semana</h2>
+  </div>
+  <form action="#">
+    <table class="table table-striped" width="100%">
+      <thead>
+        <tr><td>Semana</td><td>Consumo / Semana</td><td>Tipo</td><td>Acciones</td></tr>
+        <tr>
+          <td></td>
+          <td><input type="text" name="weight" class="form-control" required="required" autocomplete="off" /></td>
+          <td><input type="text" name="feed_type" class="form-control" required="required" /></td>
+          <td><input type="submit" class="btn btn-primary" value="ingresar" /></td>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </form>
+</div>
+
+<script>
+function set_parameters_week_feeds(rs){
+  $("#forms_parameters_week_feeds table > tbody").html($.map(rs, function(row){
+    return '<tr>' +
+           '  <td>' + row.join('</td><td>') + '</td>' +
+           '  <td><button class="btn btn-danger update">actualizar</button></td>' +
+           '</tr>';
+  }).join(""));
+}
+
+$("nav li a[href='#forms_parameters_week_feeds']").click(function(){
+  var pd = new FormData();
+  pd.append("action", "select_week_feeds");
+  request(db_url, pd, set_parameters_week_feeds);
+});
+
+$("#forms_parameters_week_feeds > form").submit(function () {
+  var pd = new FormData(this);
+  pd.append("action", "insert_week_feed");
+  request(db_url, pd, function(rs){
+    alert("ingresado!");
+    set_parameters_week_feeds(rs);
+  });
+  return false;
+});
+
+$("#forms_parameters_week_feeds table > tbody").on("click", "button.update", function(){
+  var pd = new FormData(),
+      $tr = $(this).parents("tr");
+      data = prompt("Consumo,tipo:",
+                    $tr.find("td:eq(1)").text()+","+$tr.find("td:eq(2)").text());
+  if (data) {
+    data = data.split(",");
+    pd.append("action", "update_week_feed");
+    pd.append("id", $tr.find("td:eq(0)").text());
+    pd.append("weight", data[0]);
+    pd.append("feed_type", data[1]);
+    request(db_url, pd, set_parameters_week_feeds);
+  }
+  return false;
+});
+</script>

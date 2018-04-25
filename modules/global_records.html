@@ -1,0 +1,334 @@
+<!-- GROUP MODAL -->
+<div id="group_modal" class="modal fade" role="dialog" tabindex="-1">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+        <h3 class="modal-title">Grupos<span></span></h3>
+      </div>
+      <div class="modal-body">
+        <p>
+          Notas: <br />
+          - Las lineas se identifican con <strong>numeros</strong> y
+            las columnas las <strong>letras d y h (debe y haber)</strong>.<br />
+          - Los calculos entre lineas son <strong>secuenciales</strong>,
+            no deben ser desordenados o recursivos.
+        </p>
+        <table class="table table-striped"></table>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary">ingresar grupo</button>
+        <button class="btn btn-warning">actualizar lineas</button>
+        <button class="btn btn-danger">borrar grupo</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- RECORD MODAL -->
+<div id="record_modal" class="modal fade" role="dialog" tabindex="-1" style="z-index:1500">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+        <h3 class="modal-title">Asiento</h3>
+      </div>
+      <div class="modal-body">
+        <table class="resumen table table-striped">
+          <thead><tr><th width="300">Cuenta</th>
+                     <th width="100">Debe</th>
+                     <th width="100">Haber</th>
+                     <th width="100">Debe $</th>
+                     <th width="100">Haber $</th>
+                     <th width="50">TC</th></tr></thead>
+          <tbody></tbody>
+          <tfoot><tr><th style="text-align:right;">Balanza:</th>
+                     <th></th><th></th><th></th><th></th><th></th></tr></tfoot>
+        </table>
+        <h4>Doc: <span></span><br /><p></p></h4>
+        <h4>Hecho por: <span></span><br>Aprobado por:____________________</h4>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-info print_record">imprimir</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// PARTIDAS TABLE
+function set_partidas_row($tbody, row){
+  var $tr = $('<tr data-id="'+row[0]+'"></tr>').appendTo($tbody),
+      debe = $.isNumeric(row[2])?formatCurrency(row[2], 2) || '':row[2],
+      haber = $.isNumeric(row[3])?formatCurrency(row[3], 2) || '':row[3];
+  $tr.append('<td><strong>'+($tr.index()+1)+'</strong></td>')
+     .append('<td>'+row[1]+((row[4] && row[4]!='')?', detalle: '+row[4]:'')+'</td>')
+     .append('<td><input type="text" class="form-control" size="10" value="'+debe+'"></td>')
+     .append('<td><input type="text" class="form-control" size="10" value="'+haber+'"></td>')
+     .append('<td></td>')
+     .find("td:last").append(
+       $('<button class="btn btn-danger">borrar</button>').click(function(){
+         $(this).parents("tr").remove();
+         $tbody.find("tr").each(function(i){
+           $(this).find("td:eq(0)").html('<strong>'+(i+1)+'</strong>');
+         });
+       })
+     );
+}
+
+function set_partidas_table($table, tipo_cuenta){
+  $table.html('<caption class="form-inline">' +
+              '  <strong style="margin-left: 25px;">Grupos:</strong>' +
+              '  <select name="grupo" class="form-control"></select>' +
+              '  <strong style="margin-left: 25px;">Moneda:</strong>' +
+              '  <label class="radio-inline">' +
+              '    <input type="radio" name="currency" value="crc" checked> nacional' +
+              '  </label>' +
+              '  <label class="radio-inline">' +
+              '    <input type="radio" name="currency" value="usd"> dolares' +
+              '  </label>' +
+              '</caption>' +
+              '<thead><tr>' +
+              '  <th></th>' +
+              '  <th><input type="text" name="cuenta" class="form-control" size="30"' +
+              '             autocomplete="off" placeholder="cuenta . . ."><br />' +
+              '      <input type="text" name="detalle" class="form-control" size="30"' +
+              '             autocomplete="off" placeholder="detalle . . ."></th>' +
+              '  <th style="vertical-align: middle;">' +
+              '     <input type="text" name="debe" class="form-control" size="10"' +
+              '            autocomplete="off" placeholder="debe (d) . . ."></th>' +
+              '  <th style="vertical-align: middle;">' +
+              '     <input type="text" name="haber" class="form-control" size="10"' +
+              '            autocomplete="off" placeholder="haber (h) . . ."></th>' +
+              '  <th><button name="insert" class="btn btn-primary">ingresar</button></th>' +
+              '</tr></thead>' +
+              '<tbody></tbody>');
+  var pd = new FormData(),
+      grupos = ['<option value="">. . .</option>'];
+  pd.append("action", "select_grupos");
+  request(db_url, pd, function(rs){
+    $.map(rs, function(row){ grupos.push('<option>' + row[0] + '</option>'); });
+    $table.find("select[name='grupo']").html(grupos.join(""));
+    $table.find("select[name='grupo']").val($table.parents("div.modal").data("grupo"));
+    $table.find("select[name='grupo']").change(function(){
+      var grupo = $(this).val();
+//      $table.find("tbody").empty();
+      $table.parents("div.modal").data("grupo", grupo);
+      if (grupo != ""){
+        var pd = new FormData();
+        pd.append("action", "get_valores");
+        pd.append("grupo", grupo);
+        request(db_url, pd, function(rs){
+          for (var k in rs) set_partidas_row($table.find("tbody"),
+                                             [0, rs[k][0], rs[k][1], rs[k][2], ""]);
+        });
+      }
+    });
+    $table.find("input[name='cuenta']").typeahead({
+      delay: 800, items: 20,
+      source: function(query, process) {
+        var pd = new FormData();
+        pd.append("action", tipo_cuenta?"search_cuenta_partidas":"search_cuenta");
+        pd.append("tipo", tipo_cuenta);
+        pd.append("cta", query);
+        request(db_url, pd, process);
+      }
+    });
+    $table.find("button[name='insert']").click(function(e){
+      var row = [0,
+                 $table.find("input[name='cuenta']").val(),
+                 $table.find("input[name='debe']").val(),
+                 $table.find("input[name='haber']").val(),
+                 $table.find("input[name='detalle']").val()];
+      set_partidas_row($table.find("tbody"), row);
+      $table.find("input[name='debe'], input[name='haber'], input[name='detalle']").val("");
+      $table.find("input[name='cuenta']").focus().select();
+    });
+    $table.find("button[name='insert']").keydown(function(e){
+      if (e.keyCode == 9) {
+        e.preventDefault();
+        var row = [0,
+                   $table.find("input[name='cuenta']").val(),
+                   $table.find("input[name='debe']").val(),
+                   $table.find("input[name='haber']").val(),
+                   $table.find("input[name='detalle']").val()];
+        set_partidas_row($table.find("tbody"), row);
+        $table.find("input[name='debe'], input[name='haber'], input[name='detalle']").val("");
+        $table.find("input[name='cuenta']").focus().select();
+      }
+    });
+  });
+}
+
+function verify_asiento($div, tipo_cambio, dif_action){
+  var pd = new FormData(),
+      fecha = $.trim($div.find("input[name='fecha']").val()),
+      rows = $.map($div.find("div.modal-body > table tbody tr"), function(tr){
+        return [[$(tr).find("td:eq(1)").text(),
+                 $(tr).find("td:eq(2) input").val().replace(/,/g, ''),
+                 $(tr).find("td:eq(3) input").val().replace(/,/g, '')]];
+      });
+  if (fecha == "") {
+    alert("Error, seleccione fecha!");
+  } else {
+    pd.append("action", (dif_action == "")?"verify_asiento":dif_action);
+    pd.append("fecha", fecha);
+    pd.append("tipo_cambio", tipo_cambio);
+    pd.append("currency", $div.find("input[name='currency']:checked").val());
+    pd.append("partidas", JSONfn.stringify(rows));
+    request(db_url, pd, function(rs){
+      var rows=[], totales=[0,0,0,0];
+      for (var k in rs) {
+        rows.push([rs[k][0],
+                   formatCurrency(rs[k][1], 2),
+                   formatCurrency(rs[k][2], 2),
+                   formatCurrency(rs[k][3], 4),
+                   formatCurrency(rs[k][4], 4),
+                   rs[k][5]]);
+        totales[0] = totales[0] + rs[k][1];
+        totales[1] = totales[1] + rs[k][2];
+        totales[2] = totales[2] + rs[k][3];
+        totales[3] = totales[3] + rs[k][4];
+      }
+      newTab({"title":'<h2>Verificacion</h2>',
+              "content":'<strong>Asiento:</strong><br /><table>'+
+                '<thead><tr><th>Cuenta</th>'+
+                       '<th>Debe</th><th>Haber</th>'+
+                       '<th>Debe $</th><th>Haber $</th><th>TC</th></tr></thead>' +
+                '<tbody>' +
+                  $.map(rows, function(row){
+                    return '<tr><td>' + row.join('</td><td>') + '</td></tr>';
+                  }).join("") +
+                '</tbody>' +
+                '<tfoot><tr><th></th>' +
+                            '<th>' + formatCurrency(totales[0], 2) + '</th>' +
+                            '<th>' + formatCurrency(totales[1], 2) + '</th>' +
+                            '<th>' + formatCurrency(totales[2], 4) + '</th>' +
+                            '<th>' + formatCurrency(totales[3], 4) + '</th>' +
+                            '<th></th></tr></tfoot></table>'});
+    });
+  }
+}
+
+$(document).ready(function() {
+  $("button.verify_asiento").click(function(){
+    var $div = $(this).parents("div.modal"),
+        tipo_cambio = $div.find("select[name='tipo_cambio']").val();
+    if (tipo_cambio == "") alert("Error, seleccione tipo de cambio!");
+    else verify_asiento($div, tipo_cambio, "");
+  });
+  $("button.verify_asiento_tcmin").click(function(){
+    verify_asiento($(this).parents("div.modal"), "tcmin", "");
+  });
+  $("button.verify_asiento_tcmax").click(function(){
+    verify_asiento($(this).parents("div.modal"), "tcmax", "");
+  });
+  $("button.verify_asiento_liquidacion").click(function(){
+    var $div = $(this).parents("div.modal");
+    verify_asiento($div, $div.data("tc"), "verify_asiento_liquidacion");
+  });
+});
+
+$(function() {
+  // PRINT
+  $("div.modal div.modal-footer button.print_record").click(function(){
+    var $modal = $(this).parents("div.modal"),
+        title = $modal.find("div.modal-header h3").html(),
+        div = $modal.find("div.modal-body").html();
+    newTab({"title":"<h2>"+title+"</h2>",
+            "content":div});
+  });
+
+  // GROUP
+  $("#group_modal div.modal-footer button:eq(0)").click(function(){
+    var grupo = prompt("Nuevo grupo([a-z0-9 ]):");
+    if (grupo) {
+      var pd = new FormData(),
+          $modal = $("#group_modal");
+      pd.append("action", "insert_grupo");
+      pd.append("grupo", grupo);
+      request(db_url, pd, function(rs){
+        $modal.data("grupo", grupo);
+        $modal.find("div.modal-body table select[name='grupo']")
+              .append('<option>' + grupo + '</option>')
+              .val(grupo);
+        $modal.find("div.modal-body table tbody").empty();
+        alert("Grupo ingresado!");
+      });
+    }
+  });
+
+  $("#group_modal div.modal-footer button:eq(1)").click(function(){
+    var pd = new FormData(),
+        $modal = $("#group_modal"),
+        rows = $.map($modal.find("div.modal-body table tbody tr"), function(tr){
+          var cuenta_detalle = $(tr).find("td:eq(1)").text().split(", detalle: ");
+          return [[cuenta_detalle[0],
+                 $(tr).find("td:eq(2) input").val(),
+                 $(tr).find("td:eq(3) input").val()]];
+      });
+    pd.append("action", "set_valores");
+    pd.append("grupo", $modal.data("grupo"));
+    pd.append("valores", JSONfn.stringify(rows));
+    request(db_url, pd, function(rs){ alert("Lineas actualizadas!"); });
+  });
+
+  $("#group_modal div.modal-footer button:eq(2)").click(function(){
+    var grupo = $("#group_modal").data("grupo");
+    var conf = confirm("Desea borrar el grupo: " + grupo + "?");
+    if (conf) {
+      var pd = new FormData();
+      pd.append("action", "delete_grupo");
+      pd.append("grupo", grupo);
+      request(db_url, pd, function(rs){ $("#group_modal").modal("hide"); });
+    }
+  });
+
+  // RECORD
+  $("table > tbody").on("click", "span.record", function() {
+    var id = $(this).text(),
+        pd = new FormData();
+    pd.append("action", "get_record");
+    pd.append("id", id);
+    request(db_url, pd, function(rs){
+      if (!rs || rs.length < 1) {
+        alert("Asiento anulado!");
+      } else {
+        var rows = [],
+            totales = [0, 0, 0, 0],
+            partidas = (typeof rs[4] === "object")?rs[4]:JSONfn.parse(rs[4]);
+        for (var k in partidas) {
+          rows.push([partidas[k][1] + (partidas[k][7]?', detalle: '+partidas[k][7]:''),
+                     formatCurrency(partidas[k][2],2),
+                     formatCurrency(partidas[k][3],2),
+                     formatCurrency(partidas[k][4],4),
+                     formatCurrency(partidas[k][5],4),
+                     partidas[k][6]]);
+          totales[0] = totales[0] + parseFloat(partidas[k][2]);
+          totales[1] = totales[1] + parseFloat(partidas[k][3]);
+          totales[2] = totales[2] + parseFloat(partidas[k][4]);
+          totales[3] = totales[3] + parseFloat(partidas[k][5]);
+        }
+        var $div = $("#record_modal div.modal-body");
+        $div.prev().find("h3").html("Asiento: " + id +
+          '<span style="font-size:75%; margin-left: 450px;"></span>' + sqlToLocal(rs[3]));
+        $div.find("table tbody").html($.map(rows, function(row){
+          return '<tr><td>' + row.join('</td><td>') + '</td></tr>';
+        }).join(""));
+        $div.find("table tfoot th:eq(1)").html(formatCurrency(totales[0], 2) || "");
+        $div.find("table tfoot th:eq(2)").html(formatCurrency(totales[1], 2) || "");
+        $div.find("table tfoot th:eq(3)").html(formatCurrency(totales[2], 4) || "");
+        $div.find("table tfoot th:eq(4)").html(formatCurrency(totales[3], 4) || "");
+        $div.find("h4:eq(0) span:eq(0)").html(rs[0]);
+        $div.find("h4:eq(0) p").html(rs[1].replace(/(.{70})/g, "$1<br>"));
+        $div.find("h4:eq(1) span").html(rs[2]);
+        $("#record_modal").modal("show");
+      }
+    });
+  });
+});
+</script>

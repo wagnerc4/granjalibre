@@ -1,0 +1,58 @@
+<div class="tab-pane" id="forms_reproduction_males_usage">
+  <div class="buttons">
+    <form action="#" class="form-inline">
+      <h2 style="display:inline;">Resumen Uso Padrotes</h2>
+      <input type="text" name="t1" class="date form-control" placeholder="desde . . ." />
+      <input type="text" name="t2" class="date form-control" placeholder="hasta . . ." />
+      <input type="submit" class="btn btn-info" value="ver"/>
+    </form>
+  </div>
+  <table class="table table-striped"></table>
+</div>
+
+<!-- ====================================== -->
+<!-- End HTML code.  Begin JavaScript code. -->
+
+<script>
+$("#forms_reproduction_males_usage form").submit(function () {
+  var pd = new FormData(this);
+  pd.append("action", "repro_resumen_males_usage");
+  request(db_url, pd, function(rs){  // ts, infert, animal
+    var uniqServs=[], uniqPadrotes=[], totalServsPos=[], totalServsNeg=[];
+    var row1=["<tr><th></th>"];
+    for (var k in rs) {
+      if (uniqServs.indexOf(rs[k][0]) < 0) { uniqServs.push(rs[k][0]); }
+      if (uniqPadrotes.indexOf(rs[k][2]) < 0) {
+        uniqPadrotes.push(rs[k][2]);
+        totalServsPos.push(0);
+        totalServsNeg.push(0);
+        row1.push("<th>", rs[k][2], "</th>");
+      }
+    }
+    var rows=[];
+    for (var i=0, uniqServs_len=uniqServs.length; i<uniqServs_len; ++i) {
+      var col=[];
+      for (var j=0, uniqPadrotes_len=uniqPadrotes.length; j<uniqPadrotes_len; ++j) {
+        var servsPos=null, servsNeg=null;
+        for (var k in rs) {
+          if (uniqServs[i] == rs[k][0] && uniqPadrotes[j] == rs[k][2]) {
+            if (rs[k][1]) servsNeg++; else servsPos++;
+          }
+        }
+        if (servsPos || servsNeg) { col.push("<td bgcolor='red'>+", servsPos?servsPos:0, " / -", servsNeg?servsNeg:0, "</td>"); }
+        else { col.push("<td> </td>"); }
+        totalServsPos[j] = totalServsPos[j] + servsPos;
+        totalServsNeg[j] = totalServsNeg[j] + servsNeg;
+      } 
+      rows.push("<tr><td>", new Date(uniqServs[i] * 1000).toSql(), "</td>", col.join(''), "</tr>");
+    }
+    var rowU=["<tr><td></td>"];
+    for (var i=0, uniqPadrotes_len=uniqPadrotes.length; i<uniqPadrotes_len; ++i) {
+      rowU.push("<td>+", totalServsPos[i], " / -", totalServsNeg[i], "</td>");
+    }
+    $("#forms_reproduction_males_usage table").html("<thead>" + row1.join('') + "</tr></thead>" +
+                                                    "<tbody>" + rows.join('') + rowU.join('') + "</tr></tbody>");
+  });
+  return false;
+});
+</script>

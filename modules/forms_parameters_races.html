@@ -1,0 +1,67 @@
+<div class="tab-pane" id="forms_parameters_races">
+  <div class="buttons">
+    <h2>Razas</h2>
+  </div>
+  <form action="#">
+    <table class="table table-striped" width="100%">
+      <thead>
+        <tr><td>Raza</td><td>Activa</td><td>Acciones</td></tr>
+        <tr>
+          <td><input type="text" name="race" class="form-control" required="required" autocomplete="off" /></td>
+          <td></td>
+          <td><input type="submit" class="btn btn-primary" value="ingresar" /></td>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </form>
+</div>
+
+<script>
+// RACES
+function set_parameters_races(rs){
+  $("#forms_parameters_races table > tbody").html($.map(rs, function(row){
+    return '<tr data-id="'+row[0]+'">' +
+           '  <td>' + row.slice(1).join('</td><td>') + '</td>' +
+           '  <td><button class="btn btn-danger update">actualizar</button></td>' +
+           '</tr>';
+  }).join(""));
+}
+
+function set_races_list(rs){
+  $("#racesList").empty();
+  for (var k in rs) {
+    if (rs[k][2] > 0) {
+      $("#racesList").append("<option>"+rs[k][1]+"</option>");
+    }
+  }
+}
+
+$("nav li a[href='#forms_parameters_races']").click(function(){
+  var pd = new FormData();
+  pd.append("action", "select_races");
+  request(db_url, pd, set_parameters_races);
+});
+
+$("#forms_parameters_races > form").submit(function () {
+  var pd = new FormData(this);
+  pd.append("action", "insert_race");
+  request(db_url, pd, function(rs){
+    set_parameters_races(rs);
+    set_races_list(rs);
+  });
+  return false;
+});
+
+$("#forms_parameters_races table > tbody").on("click", "button.update", function(){
+  var pd = new FormData(),
+      $tr = $(this).parents("tr");
+  pd.append("action", "update_race");
+  pd.append("id", $tr.data("id"));
+  request(db_url, pd, function(rs){
+    set_parameters_races(rs);
+    set_races_list(rs);
+  });
+  return false;
+});
+</script>

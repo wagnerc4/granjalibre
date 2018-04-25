@@ -1,0 +1,58 @@
+<div class="tab-pane" id="forms_parameters_prices">
+  <div class="buttons">
+    <h2>Alimentos</h2>
+  </div>
+  <form action="#">
+    <table class="table table-striped" width="100%">
+      <thead>
+        <tr><td>Alimento</td>
+            <!--td>Precio</td-->
+            <td>Descripcion</td>
+            <td>Activo</td>
+            <td>Acciones</td></tr>
+        <tr>
+          <td><input type="text" name="feed" class="form-control" required="required" autocomplete="off" /></td>
+          <!--td><input type="text" name="price" class="form-control" required="required" autocomplete="off" /></td-->
+          <td><input type="text" name="description" class="form-control" required="required" autocomplete="off" /></td>
+          <td></td>
+          <td><input type="submit" class="btn btn-primary" value="ingresar" /></td>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </form>
+</div>
+
+<script>
+// FEEDS
+function set_parameters_prices(rs){
+  $("#forms_parameters_prices table > tbody").html($.map(rs, function(row){
+    return '<tr data-id="'+row[0]+'">' +
+           '  <td>' + row.slice(1).join('</td><td>') + '</td>' +
+           '  <td><button class="btn btn-danger update">actualizar</button></td>' +
+           '</tr>';
+  }).join(""));
+}
+
+$("nav li a[href='#forms_parameters_prices']").click(function(){
+  var pd = new FormData();
+  pd.append("action", "select_feeds");
+  request(db_url, pd, set_parameters_prices);
+});
+
+$("#forms_parameters_prices > form").submit(function () {
+  var pd = new FormData(this);
+  pd.append("action", "insert_feed");
+  request(db_url, pd, set_parameters_prices);
+  return false;
+});
+
+$("#forms_parameters_prices table > tbody").on("click", "button.update", function(){
+  var pd = new FormData(),
+      $tr = $(this).parents("tr");
+  pd.append("action", "update_feed");
+  pd.append("id", $tr.data("id"));
+  request(db_url, pd, set_parameters_prices);
+  return false;
+});
+</script>

@@ -1,0 +1,98 @@
+<div class="tab-pane" id="forms_production_feed">
+  <div class="buttons">
+    <form action="#" class="form-inline">
+      <h2 style="display:inline;">Inventario Alimento Produccion</h2>
+      <input type="text" name="d1" class="date form-control" placeholder="desde . . ." />
+      <input type="text" name="d2" class="date form-control" placeholder="hasta . . ." />
+      <input type="submit" class="btn btn-info" value="ver"/>
+    </form>
+  </div>
+  <table class="table table-striped resumen">
+    <thead></thead>
+    <tbody></tbody>
+    <tfoot></tfoot>
+  </table>
+</div>
+
+<!-- PRODUCTION FEED MODAL -->
+<div id="production_feed_modal" class="modal fade" tabindex="-1" role="dialog">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h3 class="modal-title">Historia</h3>
+      </div>
+      <div class="modal-body">
+        <table class="table table-striped">
+          <thead></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+set_table($("#forms_production_feed table"),
+          {"paginate": true,                
+           "defs": [{"head":"Id", "foot":"count", "class":"strong"},
+                    {"head":"Bodega"},
+                    {"head":"Alimento"},
+                    {"head":"Inicial", "foot":"sum"},
+                    {"head":"Ingresos", "foot":"sum"},
+                    {"head":"Salidas", "foot":"sum"},
+                    {"head":"Final", "foot":"sum"}]});
+
+function set_produ_feed(rs){  // pen, feed, initial, ingress, egress, final
+  var rows=[];
+  for (var k in rs) {
+    rows.push([rs[k][0], '<a class="feed" href="#">'+rs[k][1]+'</span>',
+               rs[k][2], rs[k][3], rs[k][4], rs[k][5], rs[k][6]]);
+  }
+  set_table_body($("#forms_production_feed table"), rows, true, false);
+}
+
+$("#forms_production_feed form").submit(function(){
+  var pd = new FormData(this);
+  pd.append("action", "produ_feeds");
+  request(db_url, pd, set_produ_feed);
+  return false;
+});
+
+$("#forms_production_feed > table > tbody").on("click", "a.feed", function(){
+  var pd = new FormData(),
+      $tr = $(this).parents("tr"),
+      $modal = $("#production_feed_modal");
+  pd.append("action", "select_feed_history");
+  pd.append("pen_id", parseInt($tr.find("td:eq(0)").text(), 10));
+  pd.append("feed", $tr.find("td:eq(2)").text());
+  pd.append("d1", $("#forms_production_feed form input[name='d1']").val());
+  pd.append("d2", $("#forms_production_feed form input[name='d2']").val());
+  request(db_url, pd, function(rs){  // id, date, ingress, egress, desde/hacia
+    for (var k in rs) rs[k].push('<button class="delete">borrar</button>');
+    $modal.find("div.modal-body > table > thead")
+      .html('<th>'+["Fecha","Ingreso","Salida","Desde/hacia"].join('</th><th>')+'</th>');
+    $modal.find("div.modal-body > table > tbody").html($.map(rs, function(row){
+      return '<tr data-id="'+row[0]+'"><td>' + row.slice(1).join('</td><td>') + '</td></tr>';
+    }).join(""));
+    $modal.modal("show");
+  });
+});
+
+$("#production_feed_modal div.modal-body table > tbody").on("click", "button.delete", function(){
+  var $tr = $(this).parents("tr"),
+      conf = confirm("Desea borrar evento del: "+$tr.find("td:eq(0)").text()+"?");
+  if (conf){
+    $("#production_feed_modal").modal("hide");
+    var pd = new FormData();
+    pd.append("action", "delete_feed_event");
+    pd.append("id", $tr.data("id"));
+    pd.append("d1", $("#forms_production_feed form input[name='d1']").val());
+    pd.append("d2", $("#forms_production_feed form input[name='d2']").val());
+    request(db_url, pd, function(rs){
+      alert("Evento borrado!");
+      set_produ_feed(rs);
+    });
+  }
+});
+</script>

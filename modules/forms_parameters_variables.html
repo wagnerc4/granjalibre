@@ -1,0 +1,48 @@
+<div class="tab-pane" id="forms_parameters_variables">
+  <div class="buttons">
+    <h2>Variables de Especie</h2>
+  </div>
+  <table class="table table-striped">
+    <thead><tr><th>Variable</th><th>Valor</th></tr></thead>
+    <tbody>
+      <tr><td>D&iacute;as Gestacion <em>(valor inferior)</em></td>
+          <td><input type="text" id="preg_min" size="4" /></td>
+          <td><button class="btn btn-warning update_variable">actualizar</button></td></tr>
+      <tr><td>D&iacute;as Gestacion <em>(valor normal)</em></td>
+          <td><input type="text" id="preg" size="4" /></td></td>
+          <td><button class="btn btn-warning update_variable">actualizar</button></td></tr>
+      <tr><td>D&iacute;as Gestacion <em>(valor superior)</em></td>
+          <td><input type="text" id="preg_max" size="4" /></td></td>
+          <td><button class="btn btn-warning update_variable">actualizar</button></td></tr>
+      <tr><td>D&iacute;as Parto-Servicio <em>(valor superior)</em></td>
+          <td><input type="text" id="farr_serv" size="4" /></td></td>
+          <td><button class="btn btn-warning update_variable">actualizar</button></td></tr>
+      <tr><td>Temperatura Corporal <em>(valor normal)</em></td>
+          <td><input type="text" id="temp" size="4" /></td></td>
+          <td><button class="btn btn-warning update_variable">actualizar</button></td></tr>
+      <tr><td>Temperatura Corporal <em>(valor superior)</em></td>
+          <td><input type="text" id="temp_max" size="4" /></td></td>
+          <td><button class="btn btn-warning update_variable">actualizar</button></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<script>
+// VARIABLES
+$("nav li a[href='#forms_parameters_variables']").click(function(){
+  var pd = new FormData();
+  pd.append("action", "select_variables");
+  request(db_url, pd, function(rs){
+    for (var k in rs) $("#"+rs[k][0]).val(rs[k][1]);
+  });
+});
+
+$("#forms_parameters_variables .update_variable").click(function(){
+  var pd = new FormData(),
+      $input = $(this).parents("tr").find("input[type=text]");
+  pd.append("action", "update_variable");
+  pd.append("var", $input.attr("id"));
+  pd.append("val", $input.val());
+  request(db_url, pd, function(rs){ alert("Variable actualizada!"); });
+});
+</script>

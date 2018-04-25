@@ -1,0 +1,129 @@
+<div class="tab-pane" id="settings_querys">
+  <div style="margin:10px;">
+    <h3 class="form-inline">SQL <select id="querys_saved" class="form-control" style="width:550px;"></select></h3>
+    <div id="code-wrapper0" data-language="sql"
+         style="width:100%; height:300px; position:relative; background:#000;">
+-- se define consulta sql, se usa %(d1)s = desde y %(d2)s = hasta
+SELECT MIN(id) AS menor, MAX(id) AS mayor FROM documentos WHERE fecha>=%(d1)s AND fecha<=%(d2)s;
+    </div>
+    <h3>JAVASCRIPT</h3>
+    <div id="code-wrapper1" data-language="javascript"
+         style="width:100%; height:200px; position:relative; background:#000;">
+// se define encabezado, valor, clase(subquery, record) y pie(sum, avg, min, max, count) de cada columna
+[{"head":"Menor", "foot":"count"},
+ {"head":"Mayor", "class":"subquery"},
+ {"head":"Menor+Mayor", "value":"function(row){ return row[0] + row[1]; }"}]
+    </div>
+  </div>
+
+  <div id="querys_information" class="form-inline" style="margin:10px;">
+    <input type="text" class="form-control" name="codigo" placeholder="codigo . . ." style="width:200px;" />
+    <input type="text" class="form-control" name="titulo" placeholder="titulo . . ." style="width:300px;" />
+    <select class="form-control" id="querys_saved">
+      <option value="">grafico . . .</option>
+      <option>lineas</option>
+      <option>barras</option>
+      <option>pastel</option>
+    </select>
+    <input type="text" class="form-control" name="eje_x" placeholder="eje x . . ." style="width:100px;" />
+    <input type="text" class="form-control" name="eje_y" placeholder="eje y . . ." style="width:100px;" />
+    <input type="button" class="btn btn-primary" value="ingresar" />
+    <input type="button" class="btn btn-primary" value="actualizar" />
+    <input type="button" class="btn btn-primary" value="borrar" />
+  </div>
+
+  <table id="querys_table" class="table table-striped resumen">
+    <caption></caption>
+    <thead></thead>
+    <tbody></tbody>
+    <tfoot></tfoot>
+  </table>
+</div>
+
+<script>
+  ///////////// QUERYS /////////////
+  var flask0=new CodeFlask, flask1=new CodeFlask;
+  flask0.run("#code-wrapper0");
+  flask1.run("#code-wrapper1");
+
+  function set_querys_titles(rs) {
+    var rows = ['<option value="">Consultas Guardadas . . .</option>'];
+    for (var k in rs) {
+      rows.push('<option value="'+rs[k][0]+'">' +
+                String.rightPad(rs[k][0], rs[k][2]+4, "_") + rs[k][1] +
+                '</option>');
+    }
+    $("#querys_saved").html(rows.join(""));
+  }
+
+  // QUERYS SAVED
+  $("ul.nav a[href='#settings_querys']").click(function(ev){
+    var pd = new FormData();
+    pd.append("action", "select_querys_titles");
+    request(db_url, pd, set_querys_titles);
+  });
+
+  $("#querys_saved").on("change", function(){
+    var code = $(this).val(), pd = new FormData();
+    if (code != "") {
+      pd.append("action", "select_querys_data");
+      pd.append("code", code);
+      request(db_url, pd, function(rs){
+        flask0.update(rs[1].replace(/\\\\/g, '\n'));
+        flask1.update(rs[2].replace(/\\\\/g, '\n'));
+        $("#querys_information").find("input[name='codigo']").val(rs[3]).end()
+                                .find("input[name='titulo']").val(rs[4]).end()
+                                .find("select").val(rs[5]).end()
+                                .find("input[name='eje_x']").val(rs[6]).end()
+                                .find("input[name='eje_y']").val(rs[7]);
+      });
+    }
+  });
+
+  // QUERYS INFORMATION
+  $("#querys_information input[value='ingresar']," +
+    "#querys_information input[value='actualizar']").click(function(){
+    var pd=new FormData(), v=$(this).attr("value"), $qi=$("#querys_information");
+    pd.append("action", (v == "ingresar")?"insert_query":"update_query");
+    pd.append("query", $.trim($("#code-wrapper0 code").text()).replace(/\n/g, '\\\\'));
+    pd.append("defs", $.trim($("#code-wrapper1 code").text()).replace(/\n/g, '\\\\'));
+    pd.append("code", $.trim($qi.find("input[name='codigo']").val()));
+    pd.append("title", $.trim($qi.find("input[name='titulo']").val().escape()));
+    pd.append("graph_type", $qi.find("select").val());
+    pd.append("graph_x", $.trim($qi.find("input[name='eje_x']").val()));
+    pd.append("graph_y", $.trim($qi.find("input[name='eje_y']").val()));
+    request(db_url, pd, set_querys_titles);
+  });
+
+  $("#querys_information input[value='borrar']").click(function(){
+    var pd=new FormData();
+    pd.append("action", "delete_query");
+    pd.append("code", $.trim($("#querys_information input[name='codigo']").val()));
+    request(db_url, pd, set_querys_titles);
+  });
+
+  // QUERYS TABLE
+  set_table($("#querys_table"), {"buttons":true, "all_lines": false, "defs":[{}]});
+
+  $("#querys_table caption button[name='ver']").click(function(){
+    var defs = $("#code-wrapper1 code").text();
+    if (defs.replace(/\s/g, "") == "") {
+      alert("Error definicion javascript! minimo usar []!");
+    } else {
+      var $table = $(this).parents("table"),
+          pd = new FormData();
+      $table.data("code", $("#querys_information input[name='codigo']").val());
+      pd.append("action", "select_query");
+      pd.append("query", $("#code-wrapper0 code").text());
+      pd.append("d1", $table.find("caption input[name='desde']").val());
+      pd.append("d2", $table.find("caption input[name='hasta']").val());
+      pd.append("v", $table.find("caption input[name='valor']").val());
+      pd.append("c", $table.find("caption select[name='moneda']").val());
+      request(db_url, pd, function(rs){
+        rs["defs"] = defs;
+        set_table($table, rs);
+        set_table_body($table, rs["rows"], true, false);
+      });
+    }
+  });
+</script>

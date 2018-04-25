@@ -1,0 +1,494 @@
+<div class="tab-pane text-center" id="forms_production_events">
+  <div id="inventory_graph"></div>
+</div>
+
+<!-- PRODUCTION MODAL -->
+<div id="production_modal" class="modal fade" tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-sm" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h3 class="modal-title"></h3>
+      </div>
+      <div class="modal-body" style="min-height:350px;">
+        <form action="#">
+          <input type="hidden" name="action" />
+          <input type="hidden" name="target_pen" />
+          <input type="hidden" name="source_pen" />
+          <input type="text" name="date" class="date form-control" placeholder="fecha . . ." />
+          <input type="text" name="units" class="form-control" autocomplete="off" placeholder="cantidad . . ." />
+          <input type="text" name="birth" class="date form-control" placeholder="parto . . ." />
+          <input type="text" name="feed" class="form-control" autocomplete="off" placeholder="alimento . . ." />
+          <input type="text" name="death" class="form-control" autocomplete="off" placeholder="causa . . ." />
+          <input type="text" name="disease" class="form-control" placeholder="enfermedad . . ." />
+          <input type="text" name="medication" class="form-control" placeholder="medicacion . . ." />
+          <input type="text" name="weight" class="form-control" autocomplete="off" placeholder="peso . . ." />
+          <input type="text" name="note" class="form-control" autocomplete="off" placeholder="nota . . ." />
+          <!--input type="submit" class="btn btn-primary" value="ingresar" /-->
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary">ingresar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+$("nav li a[href='#forms_production_events']").click(function(){
+  var pd = new FormData();
+  pd.append("action", "produ_inventory");
+  request(db_url, pd, update_pens_nodes);
+});
+
+function set_production_modal(values){  // {"info":"", "action":"", "source_pen":0, "target_pen":0, "other":[]}
+  var $modal = $("#production_modal");
+  $modal.find("div.modal-header h3").html(values["info"]);
+  $modal.find("div.modal-body input[name='action']").val(values["action"]);
+  $modal.find("div.modal-body input[name='source_pen']").val(values["source_pen"]);
+  $modal.find("div.modal-body input[name='target_pen']").val(values["target_pen"]);
+  $modal.find("div.modal-body input:not([name='date'],[type='submit'])").hide();
+  $modal.find("div.modal-body input[type='text']").prop("required", false);
+  for (var k in values["other"]) {
+    $modal.find("div.modal-body input[name='"+values["other"][k]+"']")
+          .prop("required", true)
+          .show();
+  }
+  $("#production_modal").modal("show");
+}
+
+$("#production_modal div.modal-body input[name='feed']").typeahead({
+  delay: 800,
+  source: function(query, process) {
+    var pd = new FormData();
+    pd.append("action", "search_feed");
+    pd.append("val", query);
+    request(db_url, pd, process);
+  }
+});
+
+$("#production_modal div.modal-body input[name='death']").typeahead({
+  delay: 800,
+  source: function(query, process) {
+    var pd = new FormData();
+    pd.append("action", "search_produ_death");
+    pd.append("val", query);
+    request(db_url, pd, process);
+  }
+});
+
+$("#production_modal form").submit(function(){
+  var pd = new FormData(this);
+  request(db_url, pd, function(){
+    $("#production_modal").modal("hide");
+    $("nav li a[href='#forms_production_events']").click();
+  });
+  return false;
+});
+
+$("#production_modal div.modal-footer button").click(function() {
+  $("#production_modal form").submit();
+});
+
+
+////////////////// PENS INVENTORY ////////////////////////
+var width = 650, height = 750, margin = 15;
+
+var svg = d3.select("#inventory_graph")
+    .append("svg")
+    .attr("width", width)
+    .attr("height", height);
+
+var g = svg.append("g").attr("transform", "translate(" + width / 2 + "," + width / 2 + ")");
+
+var pack = d3.pack().size([width - margin, width - margin]).padding(2);
+
+// SIDE CIRCLES
+var side_data = [
+  {"x":50, "y":50, "x_link":50, "y_link":50, "type":"feed", "name":"Fabrica", "color":"purple"}, 
+  {"x":600, "y":50, "x_link":600, "y_link":50, "type":"wean", "name":"Maternidad", "color":"#ff7f0e"},
+  {"x":75, "y":700, "x_link":75, "y_link":700, "type":"sale", "name":"Salida", "color":"red"}, 
+  {"x":200, "y":700, "x_link":200, "y_link":700, "type":"death", "name":"Muerte", "color":"black"},
+  {"x":325, "y":700, "x_link":325, "y_link":700, "type":"disease", "name":"Enfermedad", "color":"gray"},
+  {"x":450, "y":700, "x_link":450, "y_link":700, "type":"weight", "name":"Peso", "color":"olive"},
+  {"x":575, "y":700, "x_link":575, "y_link":700, "type":"note", "name":"Nota", "color":"green"}
+];
+
+var side_item = svg.selectAll(".side_item")
+    .data(side_data).enter()
+    .append("g")
+    .attr("transform", function(d){return "translate("+d.x+", "+d.y+")"})
+ 
+side_item.append("circle")
+         .attr("class", "side_item")
+	 .attr("r", 45)
+	 .attr("stroke","black")
+         .attr("opacity", 0.8)
+	 .attr("fill", function(d){return d.color} )
+ 
+side_item.append("text")
+	 .attr("stroke","white")
+	 .text(function(d){return d.name})
+
+function update_pens_nodes(rs){  // id, pen, path, parent, feed, count
+  var root = {"name":"", "children":[]};
+  for (var k in rs) {
+    var tmp_node = root,
+        path = rs[k][2].split("_");
+    for (i=0; i < path.length; i++) {
+      if (tmp_node["name"] != path[i]) {
+        var child_index = tmp_node["children"].reduce(function(cur, val, index){
+          return (val.name === path[i] && cur === -1)?index:cur;
+        }, -1);
+        if (child_index > -1) {
+          tmp_node = tmp_node["children"][child_index];
+        } else {
+          tmp_node["children"].unshift({});
+          tmp_node = tmp_node["children"][0];
+        }
+      }
+    }
+    tmp_node["id"] = rs[k][0];
+    tmp_node["name"] = rs[k][1];
+    tmp_node["path"] = rs[k][2];
+    tmp_node["feed"] = rs[k][4];
+    tmp_node["count"] = rs[k][5];
+    if (rs[k][3]) tmp_node["children"] = [];
+  }
+
+//  console.log(root);
+
+  root = d3.hierarchy(root)
+               .sum(function(d) { return d.feed?2:1; })
+               .sort(function(a, b) { return b.value - a.value; });
+
+  g.selectAll(".node").remove();
+
+/*
+  var node = g.selectAll(".node").data(pack(root).descendants())
+      .enter().append("g")
+      .attr("class", function(d) {
+        return d.data.feed?(d.data.children?"node parent_feed":"node child_feed"):
+                           (d.children?"node parent":"node child");
+      })
+      .attr("transform", function(d) {
+        return "translate(" + (d.x - root.x) + "," + (d.y - root.y) + ")";
+      });
+
+  node.append("circle")
+      .attr("r", function(d) { return (d.data.feed && !d.children)?d.r-5:d.r; });
+
+  node.filter(".parent").append("text")
+      .attr("y", function(d,i) { return -d.r + 5; })
+      .text(function(d) { return d.data.name.substring(0, d.r / 3); });
+
+  node.selectAll(".child, .child_feed")
+      .data(function(d) {
+         d.x_link = d.x;
+         d.y_link = d.y;
+         return d;
+      });
+
+  node.filter(".child, .child_feed").append("text")
+      .attr("y", -2)
+      .text(function(d) { return d.data.name; });
+
+  node.filter(".child, .child_feed").append("text")
+      .attr("y", +7)
+      .text(function(d) { return d.data.count || ""; });
+*/
+
+  var node = g.selectAll(".node").data(pack(root).descendants())
+      .enter().append("g")
+      .attr("class", function(d) {
+        return d.data.feed?(d.data.children?"node parent_feed":"node child_feed"):
+                           (d.children?"node parent":"node child");
+      });
+
+  node.append("circle");
+
+  node.filter(".parent")
+      .on("click", function(d) { if (focus !== d) zoom(d), d3.event.stopPropagation(); })
+      .on("dblclick",function(d){ clean_link(); })
+      .append("text")
+      .text(function(d) { return d.data.name.substring(0, d.r / 3); });
+
+  node.filter(".child, .child_feed").append("text")
+      .attr("class", "line1")
+      .text(function(d) { return d.data.name; });
+
+  node.filter(".child, .child_feed").append("text")
+      .attr("class", "line2")
+      .text(function(d) { return d.data.count || ""; });
+
+  node.selectAll(".child text, .child_feed text")
+      .style("fill-opacity", 0)
+      .style("display", "none");
+
+
+  //////////////////////////////////////////////////////////////////
+  // only source: wean, feed, child_feed                          //
+  // only target: sale, death, disease, weight, note, parent_feed //
+  // source and target: child                                     //
+  //////////////////////////////////////////////////////////////////
+
+  var sourceNode = null, targetNode = null;
+
+  g.selectAll(".child")
+   .on("click", function(d,i){
+      if (sourceNode && targetNode) clean_link();
+      if(!sourceNode){
+        if (d.data.count) {
+          sourceNode = d;
+          d3.select(this).classed("node_active", true);
+        }
+      } else if (!targetNode && sourceNode != d) {
+        if (sourceNode.data && !sourceNode.data.feed) {
+
+          //////// traslado animal ////////
+
+          targetNode = d;
+          d3.select(this).classed("node_active", true);
+        } else if (sourceNode.data && d.data.count) {
+
+          //////// ingreso concentrado de bodega ////////
+
+          targetNode = d;
+          d3.select(this).classed("node_active", true);
+        } else if (sourceNode.type == "wean") {
+
+          //////// ingreso animal ////////
+
+          targetNode = d;
+          d3.select(this).classed("node_active", true);
+        }
+      }
+      update_pens_link(sourceNode, targetNode);
+    });
+
+  g.selectAll(".child_feed")  // only source
+    .on("click", function(d,i){
+      if (sourceNode && targetNode) clean_link();
+      if(!sourceNode){
+        sourceNode = d;
+        d3.select(this).classed("node_active", true);
+        update_pens_link(sourceNode, targetNode);
+      }
+    });
+
+  g.selectAll(".parent_feed")  // only target
+    .on("click", function(d,i){
+      if (sourceNode && targetNode) clean_link();
+      if (sourceNode && !targetNode) {
+        if (sourceNode.data && sourceNode.data.feed && sourceNode.parent != d) {
+
+          //////// traslado concentrado ////////
+
+          targetNode = d;
+          d3.select(this).classed("node_active", true);
+        } else if (sourceNode.type == "feed"){
+
+          //////// ingreso concentrado de fabrica ////////
+
+          targetNode = d;
+          d3.select(this).classed("node_active", true);
+        }
+        update_pens_link(sourceNode, targetNode);
+      }
+    });
+
+  side_item.on("click", function(d,i){
+    if (sourceNode && targetNode) clean_link();
+    if (!sourceNode) {
+      if (["wean", "feed"].indexOf(d.type) > -1){  // only source
+        sourceNode = d;
+        d3.select(this).classed("node_active", true);
+      }
+    } else if (!targetNode) {
+      if (["sale", "death", "disease", "weight", "note"].indexOf(d.type) > -1) {  // only target
+        if (sourceNode.data && !sourceNode.data.feed && sourceNode.data.count){
+
+          //////// ingreso evento salida ////////
+
+          targetNode = d;
+          d3.select(this).classed("node_active", true);
+        }
+      }
+    }
+    update_pens_link(sourceNode, targetNode);
+  });
+
+  function clean_link(){
+    sourceNode = null;
+    targetNode = null;
+    svg.select(".templink").remove();
+    svg.selectAll(".node_active").classed("node_active", false);
+  }
+
+  clean_link();
+
+  // ZOOM
+  var focus = root, view;
+
+  function zoom(d) {
+    var focus0 = focus; focus = d;
+
+    var transition = d3.transition()
+        .duration(d3.event.altKey ? 7500 : 750)
+        .tween("zoom", function(d) {
+          var i = d3.interpolateZoom(view, [focus.x, focus.y, focus.r * 2 + margin]);
+          return function(t) { zoomTo(i(t)); };
+        });
+
+    transition.selectAll(".child text, .child_feed text")
+              .style("fill-opacity", function(d) { return root === focus ? 0 : 1; })
+              .on("start", function(d) { if (root === focus) this.style.display = "none"; })
+              .on("end", function(d) { if (root !== focus) this.style.display = "inline"; });
+  }
+
+  function zoomTo(v) {
+    var k = width / v[2]; view = v;
+
+    node.attr("transform", function(d) {
+      return "translate(" + (d.x - v[0]) * k + "," + (d.y - v[1]) * k + ")";
+    });
+
+    node.selectAll("circle")
+        .attr("r", function(d) { return (d.data.feed && !d.children)?d.r*k-5:d.r*k; });
+
+    node.selectAll(".parent text")
+        .attr("y", function(d) { return -d.r*k + ((d.depth>1)?10:0); });
+
+    node.selectAll(".child, .child_feed")
+        .data(function(d) {
+           d.x_link = ((d.x - v[0]) * k) + root.x;
+           d.y_link = ((d.y - v[1]) * k) + root.y;
+           return d;
+        });
+
+    node.selectAll(".child text.line1, .child_feed text.line1")
+        .attr("y", function(d) { return -d.r*k * 0.25; })
+        .text(function(d) { return d.data.name; });
+
+    node.selectAll(".child text.line2, .child_feed text.line2")
+        .attr("y", function(d) { return d.r*k * 0.25; })
+        .text(function(d) { return d.data.count || ""; });
+
+    svg.select(".templink").remove();
+    if (sourceNode && targetNode) clean_link();
+  }
+
+  zoomTo([root.x, root.y, root.r * 2 + margin]);
+}
+
+
+// LINK
+var link_timer=null;
+
+function diagonal(d) {
+  return "M" + d.source.x + "," + d.source.y + 
+         "C" + (d.source.x + d.target.x) / 2 + "," + d.source.y +
+         " " + (d.source.x + d.target.x) / 2 + "," + d.target.y +
+         " " + d.target.x + "," + d.target.y;
+}
+
+function update_pens_link(sourceNode, targetNode) {
+  if (sourceNode && targetNode) {
+    var link = svg.selectAll(".templink")
+        .data([{source: {x: sourceNode.x_link + (margin/2),
+                         y: sourceNode.y_link + (margin/2)},
+                target: {x: targetNode.x_link + (margin/2),
+                         y: targetNode.y_link + (margin/2)}}]);
+
+    link.enter().append("path")
+        .attr("class", "templink")
+        .attr("d", diagonal)
+        .attr("pointer-events", "none");
+
+    link.exit().remove();
+
+    window.clearTimeout(link_timer);
+
+    link_timer = window.setTimeout(function() {
+      if (["wean", "feed"].indexOf(sourceNode.type) > -1) {
+        if (sourceNode.type == "wean") {
+          set_production_modal({"info":"Ingresar animales a "+targetNode.parent.data.name+"-corral#"+targetNode.data.name,
+                                "action":"insert_pen_wean",
+                                "source_pen":0,
+                                "target_pen":targetNode.data.id,
+                                "other":["units", "birth"]});
+        }
+        if (sourceNode.type == "feed") {
+          set_production_modal({"info":"Ingresar concentrado a bodega-"+targetNode.parent.data.name,
+                                "action":"insert_pen_feed",
+                                "source_pen":0,
+                                "target_pen":targetNode.data.id,
+                                "other":["units", "feed"]});
+        }
+      } else if (["sale", "death", "disease", "weight", "note"].indexOf(targetNode.type) > -1) {
+        if (targetNode.type == "sale") {
+          set_production_modal({"info":"Salida animales de "+sourceNode.parent.data.name+"-corral#"+sourceNode.data.name,
+                                "action":"insert_pen_sale",
+                                "source_pen":sourceNode.data.id,
+                                "target_pen":0,
+                                "other":["units"]});
+        }
+        if (targetNode.type == "death") {
+          set_production_modal({"info":"Muerte en "+sourceNode.parent.data.name+"-corral#"+sourceNode.data.name,
+                                "action":"insert_pen_death",
+                                "source_pen":sourceNode.data.id,
+                                "target_pen":0,
+                                "other":["units", "death"]});
+        }
+        if (targetNode.type == "disease") {
+          set_production_modal({"info":"Enfermedad en "+sourceNode.parent.data.name+"-corral#"+sourceNode.data.name,
+                                "action":"insert_pen_disease",
+                                "source_pen":sourceNode.data.id,
+                                "target_pen":0,
+                                "other":["units", "disease", "medication"]});
+        }
+        if (targetNode.type == "weight") {
+          set_production_modal({"info":"Peso animales de "+sourceNode.parent.data.name+"-corral#"+sourceNode.data.name,
+                                "action":"insert_pen_weight",
+                                "source_pen":sourceNode.data.id,
+                                "target_pen":0,
+                                "other":["units", "weight"]});
+        }
+        if (targetNode.type == "note") {
+          set_production_modal({"info":"Nota de "+sourceNode.parent.data.name+"-corral#"+sourceNode.data.name,
+                                "action":"insert_pen_note",
+                                "source_pen":sourceNode.data.id,
+                                "target_pen":0,
+                                "other":["note"]});
+        }
+      } else if (!sourceNode.data.feed) {
+        set_production_modal({"info":"Traslado animales de "+sourceNode.parent.data.name+"-corral#"+sourceNode.data.name+
+                                     ", a "+targetNode.parent.data.name+"-corral#"+targetNode.data.name,
+                              "action":"insert_group_move",
+                              "source_pen":sourceNode.data.id,
+                              "target_pen":targetNode.data.id,
+                              "other":["units"]});
+      } else if (targetNode.data.feed) {
+        set_production_modal({"info":"Traslado concentrado ("+sourceNode.data.name+")"+
+                                     "\nde bodega-"+sourceNode.parent.parent.data.name+
+                                     ", a bodega-"+targetNode.parent.data.name,
+                              "action":"insert_feed_move",
+                              "source_pen":sourceNode.parent.data.id,
+                              "target_pen":targetNode.data.id,
+                              "other":["units"]});
+        $("#production_modal div.modal-body input[name='feed']").val(sourceNode.data.name);
+      } else if (targetNode.data.count) {
+        set_production_modal({"info":"Ingresar concentrado ("+sourceNode.data.name+")"+
+                                     "\nde bodega-"+sourceNode.parent.parent.data.name+
+                                     ", a "+targetNode.parent.data.name+"-corral#"+targetNode.data.name,
+                              "action":"insert_group_feed",
+                              "source_pen":sourceNode.parent.data.id,
+                              "target_pen":targetNode.data.id,
+                              "other":["units"]});
+        $("#production_modal div.modal-body input[name='feed']").val(sourceNode.data.name);
+      }
+    }, 500);
+
+  }
+}
+</script>

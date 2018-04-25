@@ -1,0 +1,35 @@
+<div class="tab-pane active" id="forms_calendar" class="monthly">
+  <div id="calendar" class="monthly"></div>
+</div>
+
+<script>
+  // CALENDAR
+  $("#calendar").monthly({
+    mode: "event",
+    weekStart: "Mon",
+    monthNames: ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"],
+    dayNames: ["DOM","LUN","MAR","MIE","JUE","VIE","SAB"],
+    eventList: false,
+    dataType: "json",
+    data: function(month, year, callback) {
+      var pd = new FormData();
+      pd.append("action", "calendar");
+      pd.append("start_date", new Date(year, month-1, 1).toSql());
+      pd.append("end_date", new Date(year, month, 1).toSql());
+      request(db_url, pd, callback);
+    },
+    dayClick: function(day, month, year, callback){
+      var title = prompt("Nuevo evento:"),
+          date = new Date(year, month-1, day).toSql();
+      if (title) {
+        var pd = new FormData();
+        pd.append("action", "calendar");
+        pd.append("color", "red");
+        pd.append("title", title);
+        pd.append("start_date", date);
+        pd.append("end_date", date);
+        request(db_url, pd, callback);
+      }
+    }
+  });
+</script>
