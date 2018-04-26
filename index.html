@@ -515,9 +515,10 @@ crispEdges;}
       set_table($t, {"buttons": true, "all_lines": true,
                      "defs": resumens_data[k]['defs'].replace(/\\\\/g, '')});
       $t.find("caption h2").html(resumens_data[k]['title']);
-      if (!resumens_data[k]["d1"]) $t.find("caption input:eq(0)").hide();
-      if (!resumens_data[k]["d2"]) $t.find("caption input:eq(1)").hide();
-      if (!resumens_data[k]["v"]) $t.find("caption input:eq(2)").hide();
+      if (!resumens_data[k]["d1"]) $t.find("caption input[name='desde']").hide();
+      if (!resumens_data[k]["d2"]) $t.find("caption input[name='hasta']").hide();
+      if (!resumens_data[k]["v"]) $t.find("caption input[name='valor']").hide();
+      if (!resumens_data[k]["c"]) $t.find("caption select[name='moneda']").hide();
       if (!resumens_data[k]["graph_type"]) $t.find("caption button[name='graph']").hide();
       $div.append($t);
       $("#resumens_data").before($div);
