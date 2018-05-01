@@ -105,3 +105,9 @@ GRANT SELECT ON ALL TABLES IN SCHEMA public TO select_user;
 GRANT SELECT ON ALL TABLES IN SCHEMA public TO update_user;
 GRANT SELECT ON ALL TABLES IN SCHEMA public TO delete_user;
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.sessions TO select_user;
+
+GRANT SELECT, INSERT ON TABLE public.animals, public.animals_activities, public.animals_semen, public.animals_semen_activities TO update_user;
+
+GRANT SELECT, INSERT ON TABLE public.animals, public.animals_activities, public.animals_semen_activities TO delete_user;
+
+GRANT SELECT, INSERT, DELETE ON TABLE public.animals_semen TO delete_user;
