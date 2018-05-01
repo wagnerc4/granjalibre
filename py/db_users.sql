@@ -4,7 +4,6 @@
 
 GRANT USAGE ON SCHEMA activity_:activity TO select_user;
 GRANT SELECT ON ALL TABLES IN SCHEMA activity_:activity TO select_user;
-GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA activity_:activity TO select_user;
 
 GRANT USAGE ON SCHEMA activity_:activity TO update_user;
 GRANT SELECT, INSERT, UPDATE ON ALL TABLES IN SCHEMA activity_:activity TO update_user;
@@ -18,7 +17,6 @@ GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA activity_:activity TO delete_user
 
 -- REVOKE ALL ON ALL TABLES IN SCHEMA public FROM select_user;
 -- REVOKE ALL ON ALL TABLES IN SCHEMA activity_1 FROM select_user;
--- REVOKE ALL ON ALL SEQUENCES IN SCHEMA activity_1 FROM select_user;
 -- REVOKE ALL ON SCHEMA activity_1 FROM select_user;
 -- DROP ROLE select_user;
 
