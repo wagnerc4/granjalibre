@@ -34,20 +34,6 @@ CREATE TABLE races (
 
 
 -- ****************
--- deaths
--- ****************
-CREATE TABLE deaths (
-  id SERIAL PRIMARY KEY NOT NULL,
-  death VARCHAR(30) UNIQUE NOT NULL,
-  type CHAR(5) NOT NULL,
-  active SMALLINT NOT NULL,
-  CHECK (TRIM(death) <> '' AND death !~* '[^a-z0-9 :.,/()#-]+'),
-  CHECK (type IN ('adult', 'young')),
-  CHECK (active IN (0, 1))
-);
-
-
--- ****************
 -- animals
 -- ****************
 CREATE TABLE animals (
