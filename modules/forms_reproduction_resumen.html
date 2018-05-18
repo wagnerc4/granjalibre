@@ -137,36 +137,37 @@ $("#repro_resumen_form").submit(function () {
   var pd = new FormData(this);
   pd.append("action", "repro_resumen");
   request(db_url, pd, function(rs){
-    for (var k in rs) repro_resumen[rs[k][0]] = [rs[k][1], rs[k][2]];
-    var services = repro_resumen["services"]();
+    var tmp = $.extend(true, {}, repro_resumen);
+    for (var k in rs) tmp[rs[k][0]] = [rs[k][1], rs[k][2]];
+    var services = tmp["services"](),
+        abortions = tmp["abortions"](),
+        farrows = tmp["farrows"](),
+        deaths = tmp["deaths"](),
+        weans = tmp["weans"](),
+        stock = tmp["stock"]();
     for (var k in services) {
-      $("#repro_resumen_services > tr:eq("+k+") > td:eq(1)").html(services[k][0]);    
-      $("#repro_resumen_services > tr:eq("+k+") > td:eq(2)").html(services[k][1]);    
+      $("#repro_resumen_services > tr:eq("+k+") > td:eq(1)").html(services[k][0]);
+      $("#repro_resumen_services > tr:eq("+k+") > td:eq(2)").html(services[k][1]);
     }
-    var abortions = repro_resumen["abortions"]();
     for (var k in abortions) {
-      $("#repro_resumen_abortions > tr:eq("+k+") > td:eq(1)").html(abortions[k][0]);    
-      $("#repro_resumen_abortions > tr:eq("+k+") > td:eq(2)").html(abortions[k][1]);    
+      $("#repro_resumen_abortions > tr:eq("+k+") > td:eq(1)").html(abortions[k][0]);
+      $("#repro_resumen_abortions > tr:eq("+k+") > td:eq(2)").html(abortions[k][1]);
     }
-    var farrows = repro_resumen["farrows"]();
     for (var k in farrows) {
-      $("#repro_resumen_farrows > tr:eq("+k+") > td:eq(1)").html(farrows[k][0]);    
-      $("#repro_resumen_farrows > tr:eq("+k+") > td:eq(2)").html(farrows[k][1]);    
+      $("#repro_resumen_farrows > tr:eq("+k+") > td:eq(1)").html(farrows[k][0]);
+      $("#repro_resumen_farrows > tr:eq("+k+") > td:eq(2)").html(farrows[k][1]);
     }
-    var deaths = repro_resumen["deaths"]();
     for (var k in deaths) {
-      $("#repro_resumen_deaths > tr:eq("+k+") > td:eq(1)").html(deaths[k][0]);    
-      $("#repro_resumen_deaths > tr:eq("+k+") > td:eq(2)").html(deaths[k][1]);    
+      $("#repro_resumen_deaths > tr:eq("+k+") > td:eq(1)").html(deaths[k][0]);
+      $("#repro_resumen_deaths > tr:eq("+k+") > td:eq(2)").html(deaths[k][1]);
     }
-    var weans = repro_resumen["weans"]();
     for (var k in weans) {
-      $("#repro_resumen_weans > tr:eq("+k+") > td:eq(1)").html(weans[k][0]);    
-      $("#repro_resumen_weans > tr:eq("+k+") > td:eq(2)").html(weans[k][1]);    
+      $("#repro_resumen_weans > tr:eq("+k+") > td:eq(1)").html(weans[k][0]);
+      $("#repro_resumen_weans > tr:eq("+k+") > td:eq(2)").html(weans[k][1]);
     }
-    var stock = repro_resumen["stock"]();
     for (var k in stock) {
-      $("#repro_resumen_stock > tr:eq("+k+") > td:eq(1)").html(stock[k][0]);    
-      $("#repro_resumen_stock > tr:eq("+k+") > td:eq(2)").html(stock[k][1]);    
+      $("#repro_resumen_stock > tr:eq("+k+") > td:eq(1)").html(stock[k][0]);
+      $("#repro_resumen_stock > tr:eq("+k+") > td:eq(2)").html(stock[k][1]);
     }
   });
   return false;
