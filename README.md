@@ -3,6 +3,8 @@ Animals production application
 
 Packages needed: postgresql python3-psycopg2 python3-tz python3-bottle
 
+Packages for bot: python-telegram-bot js2py
+
 Install:
 
     createuser -s root
