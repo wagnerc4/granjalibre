@@ -2,63 +2,15 @@
   <div class="buttons">
     <form action="#" id="repro_resumen_form" class="form-inline">
       <h2 style="display:inline;">Resumen Reproduccion</h2>
-      <input type="text" name="t1" class="date form-control" placeholder="desde . . ." />
-      <input type="text" name="t2" class="date form-control" placeholder="hasta . . ." />
+      <input type="text" name="d1" class="date form-control" placeholder="desde . . ." />
+      <input type="text" name="d2" class="date form-control" placeholder="hasta . . ." />
       <input type="submit" class="btn btn-info" value="ver"/>
     </form>
   </div>
   <table style="border-collapse: collapse; text-align: right;">
-    <thead><tr><th width="250"></th><th width="125">Paridad</th><th width="150">Totales</th></tr></thead>
-    <tbody id="repro_resumen_services">
-      <tr><td>
-        <strong style="float:left;">Detalles de Servicios</strong><br />
-        <span style="float:right;">Total Servicios</span></td><td valign="bottom"></td><td valign="bottom"></td>
-      </tr>
-      <tr><td>Celos sin servicio</td><td></td><td></td></tr>
-      <tr><td>Servicios infertiles / dias</td><td></td><td></td></tr>
-      <tr><td>Fertilidad (%)</td><td></td><td></td></tr>
-    </tbody>
-    <tbody id="repro_resumen_abortions" style="border-top: 20px solid transparent;">
-      <tr><td>
-        <strong style="float:left;">Detalles de Abortos</strong><br />
-        <span style="float:right;">Total Abortos / dias</span></td><td valign="bottom"></td><td valign="bottom"></td>
-      </tr>
-    </tbody>
-    <tbody id="repro_resumen_farrows" style="border-top: 20px solid transparent;">
-      <tr><td>
-        <strong style="float:left;">Detalles de Partos</strong><br />
-        <span style="float:right;">Total Partos</span></td><td valign="bottom"></td><td valign="bottom"></td>
-      </tr>
-      <tr><td>N. totales / camada</td><td></td><td></td></tr>
-      <tr><td>N. vivos / camada</td><td></td><td></td></tr>
-      <tr><td>N. muertos / camada</td><td></td><td></td></tr>
-      <tr><td>Momias / camada</td><td></td><td></td></tr>
-      <tr><td>Peso camada / animal</td><td></td><td></td></tr>
-    </tbody>
-    <tbody id="repro_resumen_deaths" style="border-top: 20px solid transparent;">
-      <tr><td>
-        <strong style="float:left;">Detalles de Bajas</strong><br />
-        <span style="float:right;">Total Bajas / dias</span></td><td valign="bottom"></td><td valign="bottom"></td>
-      </tr>
-      <tr><td>Mortalidad (%)</td><td></td><td></td></tr>
-    </tbody>
-    <tbody id="repro_resumen_weans" style="border-top: 20px solid transparent;">
-      <tr><td>
-        <strong style="float:left;">Detalles de Destetes</strong><br />
-        <span style="float:right;">Total Destetes / dias</span></td><td valign="bottom"></td><td valign="bottom"></td>
-      </tr>
-      <tr><td>Total Parciales / dias</td><td></td><td></td></tr>
-      <tr><td>Destetados / camada</td><td></td><td></td></tr>
-      <tr><td>Peso camada / animal</td><td></td><td></td></tr>
-    </tbody>
-    <tbody id="repro_resumen_stock" style="border-top: 20px solid transparent;">
-      <tr><td>
-        <strong style="float:left;">Detalles de Inventario</strong><br />
-        <span style="float:right;">Total Machos / ingresos</span></td><td valign="bottom"></td><td valign="bottom"></td>
-      </tr>
-      <tr><td>Total Hembras / ingresos</td><td></td><td></td></tr>
-      <tr><td>Salidas</td><td></td><td></td></tr>
-    </tbody>
+    <thead><tr><th width="250"></th><th width="125">Paridad</th><th                                
+width="150">Totales</th></tr></thead>
+    <tbody></tbody>
   </table>
 </div>
 
@@ -66,109 +18,13 @@
 <!-- End HTML code.  Begin JavaScript code. -->
 
 <script>
-var repro_resumen = {
-  "prev_entry_male": [0, ""],
-  "prev_entry_female": [0, ""],
-  "ev_entry_female": [0, ""],
-  "ev_entry_male": [0, ""],
-  "ev_sale": [0, ""],
-  "ev_heat": [0, ""],
-  "ev_service": [0, ""],
-  "ev_check_neg": [0, ""],
-  "ev_abortion": [0, ""],
-  "ev_farrow": [0, ""],
-  "ev_death": [0, ""],
-  "ev_wean": [0, ""],
-  "ev_partial_wean": [0, ""],
-  "services": function(){
-    var total = parseInt(this.ev_service[1], 10);
-    var unpreg = parseInt(this.ev_check_neg[1].split("_")[0], 10);
-    return [[this.ev_service[0], this.ev_service[1]],
-            [this.ev_heat[0], this.ev_heat[1]],
-            [this.ev_check_neg[0], this.ev_check_neg[1].replace("_", " / ")],
-            ["", (100 - (unpreg * 100 / total)).toFixed(2) + " %"]];
-  },
-  "abortions": function(){
-    return [[this.ev_abortion[0], this.ev_abortion[1].replace("_", " / ")]];
-  },
-  "farrows": function(){
-    var e = this.ev_farrow[1].split("_");
-    var total = parseInt(e[0], 10);
-    var mf = parseInt(e[1], 10);
-    var d = parseInt(e[2], 10);
-    var m = parseInt(e[3], 10);
-    var w = parseFloat(e[4]);
-    return [[this.ev_farrow[0], e[0]],
-            ["", (mf + d) + " / " + ((mf + d) / total).toFixed(2)],
-            ["", mf + " / " + (mf / total).toFixed(2)],
-            ["", d + " / " + (d / total).toFixed(2)],
-            ["", m + " / " + (m / total).toFixed(2)],
-            ["", (w / total).toFixed(2) + " / " + (w / mf).toFixed(2)]];
-  },
-  "deaths": function(){
-    var mf = parseInt(this.ev_farrow[1].split("_")[1], 10);
-    var d = parseInt(this.ev_death[1].split("_")[0], 10);
-    return [[this.ev_death[0], this.ev_death[1].replace("_", " / ")],
-            ["", (d * 100 / mf).toFixed(2) + " %"]];
-  },
-  "weans": function(){
-    var e = this.ev_wean[1].split("_");
-    var ee = this.ev_partial_wean[1].split("_");
-    var total = parseInt(e[0], 10) + (parseInt(ee[0], 10) || 0);
-    var a = parseInt(e[2], 10) + (parseInt(ee[2], 10) || 0);
-    var w = parseFloat(e[3]) + (parseFloat(ee[3]) || 0);
-    return [[this.ev_wean[0], e[0] + " / " + e[1]],
-            [this.ev_partial_wean[0], (ee[0] || 0) + " / " + (ee[1]  || 0)],
-            ["", a + " / " + (a / total).toFixed(2)],
-            ["", (w / total).toFixed(2) + " / " + (w / a).toFixed(2)]];
-  },
-  "stock": function(){
-    var m = this.prev_entry_male[0] +
-            (parseInt(this.ev_entry_male[1], 10) || 0);
-    var f = this.prev_entry_female[0] +
-            (parseInt(this.ev_entry_female[1], 10) || 0);
-    return [["", m + " / " + this.ev_entry_male[1]],
-            ["", f + " / " + this.ev_entry_female[1]],
-            [this.ev_sale[0], this.ev_sale[1]]];
-  }
-};
-
 $("#repro_resumen_form").submit(function () {
   var pd = new FormData(this);
   pd.append("action", "repro_resumen");
   request(db_url, pd, function(rs){
-    var tmp = $.extend(true, {}, repro_resumen);
-    for (var k in rs) tmp[rs[k][0]] = [rs[k][1], rs[k][2]];
-    var services = tmp["services"](),
-        abortions = tmp["abortions"](),
-        farrows = tmp["farrows"](),
-        deaths = tmp["deaths"](),
-        weans = tmp["weans"](),
-        stock = tmp["stock"]();
-    for (var k in services) {
-      $("#repro_resumen_services > tr:eq("+k+") > td:eq(1)").html(services[k][0]);
-      $("#repro_resumen_services > tr:eq("+k+") > td:eq(2)").html(services[k][1]);
-    }
-    for (var k in abortions) {
-      $("#repro_resumen_abortions > tr:eq("+k+") > td:eq(1)").html(abortions[k][0]);
-      $("#repro_resumen_abortions > tr:eq("+k+") > td:eq(2)").html(abortions[k][1]);
-    }
-    for (var k in farrows) {
-      $("#repro_resumen_farrows > tr:eq("+k+") > td:eq(1)").html(farrows[k][0]);
-      $("#repro_resumen_farrows > tr:eq("+k+") > td:eq(2)").html(farrows[k][1]);
-    }
-    for (var k in deaths) {
-      $("#repro_resumen_deaths > tr:eq("+k+") > td:eq(1)").html(deaths[k][0]);
-      $("#repro_resumen_deaths > tr:eq("+k+") > td:eq(2)").html(deaths[k][1]);
-    }
-    for (var k in weans) {
-      $("#repro_resumen_weans > tr:eq("+k+") > td:eq(1)").html(weans[k][0]);
-      $("#repro_resumen_weans > tr:eq("+k+") > td:eq(2)").html(weans[k][1]);
-    }
-    for (var k in stock) {
-      $("#repro_resumen_stock > tr:eq("+k+") > td:eq(1)").html(stock[k][0]);
-      $("#repro_resumen_stock > tr:eq("+k+") > td:eq(2)").html(stock[k][1]);
-    }
+    $("#forms_reproduction_resumen > table > tbody").html("<tr>" + $.map(rs, function(row){
+      return "<td>" + row.join("</td><td>") + "</td>";
+    }).join("</tr><tr>") + "</tr>");
   });
   return false;
 });
