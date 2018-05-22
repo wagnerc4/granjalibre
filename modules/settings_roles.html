@@ -1,0 +1,172 @@
+<div class="tab-pane" id="settings_roles">
+  <div class="buttons">
+    <h2 style="display:inline;">Roles</h2>
+    <button class="btn btn-info">ver</button>
+    <button class="btn btn-primary">ingresar</button>
+  </div>
+  <table id="workers_table" class="table table-striped">
+    <thead>
+      <tr><th>Usuario</th>
+          <th>Telefono</th>
+          <th>E-mail</th>
+          <th></th></tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<!-- ROLES MODAL -->
+<div id="roles_modal" class="modal fade" role="dialog" tabindex="-1">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+        <h3 class="modal-title">Roles</h3>
+      </div>
+      <div class="modal-body">
+        <form action="#" class="form-inline">
+          <input type="hidden" name="id">
+          <input type="text" name="usuario" placeholder="usuario . . ." size="40" autocomplete="off" />[a-zA-Z0-9 .()]<br />
+          <input type="text" name="phone" placeholder="telefono . . ." size="40" autocomplete="off" />[0-9 ,()-]<br />
+          <input type="text" name="email" placeholder="e-mail . . ." size="40" autocomplete="off" />[a-z0-9.@]<br />
+          <input type="password" name="pass" placeholder="clave . . ." />
+          <input type="password" name="passx" placeholder="clave . . ." /><br />
+          <strong>Privilegio:</strong>
+          <select name="_privilege"><option value="select">seleccionar</option>
+                                    <!--option value="insert">ingresar</option-->
+                                    <option value="update">actualizar</option>
+                                    <option value="delete">borrar</option></select>
+          <input type="submit" class="btn btn-primary" value="guardar" />
+        </form>
+        <table id="roles_table" width="100%">
+          <caption>
+            <select class="form-control"></select>
+          </caption>
+          <tbody><tr><td></td><td></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function set_workers(rs){
+  $("#workers_table > tbody").html($.map(rs, function(row){
+    return '<tr data-id="'+row[0]+'"' +
+           '    data-privilege="'+row[1]+'"' +
+           '    data-modules="'+row[2]+'">' +
+           '  <td>' + row.slice(3).join('</td><td>') + '</td>' +
+           '  <td>' +
+           '    <button class="btn btn-warning update">actualizar</button>' +
+           '    <button class="btn btn-danger delete">borrar</button>' +
+           '  </td>' +
+           '</tr>';
+  }).join(""));
+}
+
+$("#settings_roles > div.buttons button:eq(0)").click(function(ev){
+  var pd = new FormData();
+  pd.append("action", "select_workers");
+  request(db_url, pd, set_workers);
+});
+
+// ROLES MODAL
+function set_roles_modal(rs){
+  var modules = rs[0],
+      roles = rs[1],
+      len = modules.length,
+      titles = [],
+      last = '';
+  for (var i=0; i<len; i++) {
+    var t = modules[i][1].replace(/(.{42})/g, "$1-<br>");
+    if (last != modules[i][0]) {
+      t = '<br /><strong>' + t + '</strong>';
+      last = modules[i][0];
+    }
+    if (modules[i][2]) {
+      var input = '<input type="checkbox" class="'+modules[i][0]+'" name="'+modules[i][2]+'">';
+      if ("glb,cal".indexOf(modules[i][0]) > -1) input = input.replace(/>/, ' disabled checked>');
+      if (t.indexOf("strong") > -1) input = input.replace(/>/, ' checked>');
+      t = t + input;
+    }
+    titles.push(t);
+  }
+  $("#roles_table select").html('<option>rol . . .</option>' + $.map(roles, function(rol){
+    return '<option data-modules="'+rol[1]+'">' + rol[0] + '</option>';
+  }).join(''));
+  $("#roles_table td:eq(0)").html(titles.slice(0, len/2).join('<br />'));
+  $("#roles_table td:eq(1)").html(titles.slice(len/2).join('<br />'));
+  $("#roles_modal").modal("show");
+}
+
+$("#roles_table caption select").change(function(ev){
+  var modules = $(this).find("option:selected").data("modules");
+  $("#roles_table tbody input:not(.glb,.cal)").each(function(){
+    $(this).prop("checked", (modules.indexOf($(this).attr("name")) > -1)?true:false);
+  });
+});
+
+$("#roles_modal form").submit(function(){
+  if (this.pass.value != this.passx.value) {
+    alert("Error, claves no coinciden!");
+  } else {
+    this[1].value = $.trim(this[1].value.escape());
+    var pd = new FormData(this),
+        id = $(this).find("input[name='id']").val(),
+        roles = $.map($("#roles_table tbody input:checked"), function(item){
+          return $(item).attr("name");
+        });
+    pd.append("action", (id=="")?"insert_worker":"update_worker");
+    pd.append("roles", roles.join(","));
+    request(db_url, pd, function(rs){
+      $("#roles_modal").modal("hide");
+      set_workers(rs);
+    });
+  }
+  return false;
+});
+
+// INSERT, UPDATE, DELETE
+$("#settings_roles > div.buttons button:eq(1)").click(function(ev){
+  var pd = new FormData();
+  pd.append("action", "get_modules_roles");
+  request(db_url, pd, function(rs){
+    set_roles_modal(rs);
+    var $form = $("#roles_modal form");
+    $form.find("input[name='id']").val("");
+    $form.find("input[type='password']").val("");
+  });
+});
+
+$("#workers_table > tbody").on("click", ".update",  function(ev){
+  var $tr = $(this).parents("tr"),
+      pd = new FormData();
+  pd.append("action", "get_modules_roles");
+  request(db_url, pd, function(rs){
+    set_roles_modal(rs);
+    var $form = $("#roles_modal form");
+    $form.find("input[name='id']").val($tr.data("id"));
+    $form.find("input[name='usuario']").val($tr.find("td:eq(0)").text());
+    $form.find("input[name='phone']").val($tr.find("td:eq(1)").text());
+    $form.find("input[name='email']").val($tr.find("td:eq(2)").text());
+    $form.find("input[type='password']").val("");
+    $form.find("select[name='_privilege']").val($tr.data("privilege"));
+    $("#roles_table tbody input:not(.glb,.cal)").each(function(){
+      $(this).prop("checked",($tr.data("modules").indexOf($(this).attr("name")) > -1)?true:false);
+    });
+  });
+});
+
+$("#workers_table > tbody").on("click", ".delete",  function(ev){
+  var $tr = $(this).parents("tr"),
+      conf = confirm("Desea borrar usuario: " + $tr.find("td:eq(0)").text() + "?");
+  if (conf){
+    var pd = new FormData();
+    pd.append("action", "delete_worker");
+    pd.append("id", $tr.data("id"));
+    request(db_url, pd, set_workers);
+  }
+});
+</script>
