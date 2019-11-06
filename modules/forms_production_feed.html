@@ -33,33 +33,19 @@
 </div>
 
 <script>
-set_table($("#forms_production_feed table"),
-          {"paginate": true,                
-           "defs": [{"head":"Id", "foot":"count", "class":"strong"},
-                    {"head":"Bodega"},
-                    {"head":"Alimento"},
-                    {"head":"Inicial", "foot":"sum"},
-                    {"head":"Ingresos", "foot":"sum"},
-                    {"head":"Salidas", "foot":"sum"},
-                    {"head":"Final", "foot":"sum"}]});
-
-function set_produ_feed(rs){  // pen, feed, initial, ingress, egress, final
-  var rows=[];
-  for (var k in rs) {
-    rows.push([rs[k][0], '<a class="feed" href="#">'+rs[k][1]+'</span>',
-               rs[k][2], rs[k][3], rs[k][4], rs[k][5], rs[k][6]]);
-  }
-  set_table_body($("#forms_production_feed table"), rows, true, false);
-}
-
 $("#forms_production_feed form").submit(function(){
-  var pd = new FormData(this);
+  var pd = new FormData(this),
+      $div = $("#forms_production_feed");
   pd.append("action", "produ_feeds");
-  request(db_url, pd, set_produ_feed);
+  request(db_url, pd, function(rs){
+    $div.children().not($div.find("div.buttons")).remove();
+    rs["all_lines"] = true;
+    $div.append(set_table(rs));
+  });
   return false;
 });
 
-$("#forms_production_feed > table > tbody").on("click", "a.feed", function(){
+$("#forms_production_feed").on("click", "span.feed", function(){
   var pd = new FormData(),
       $tr = $(this).parents("tr"),
       $modal = $("#production_feed_modal");
@@ -84,14 +70,17 @@ $("#production_feed_modal div.modal-body table > tbody").on("click", "button.del
       conf = confirm("Desea borrar evento del: "+$tr.find("td:eq(0)").text()+"?");
   if (conf){
     $("#production_feed_modal").modal("hide");
-    var pd = new FormData();
+    var pd = new FormData(),
+        $div = $("#forms_production_feed");
     pd.append("action", "delete_feed_event");
     pd.append("id", $tr.data("id"));
     pd.append("d1", $("#forms_production_feed form input[name='d1']").val());
     pd.append("d2", $("#forms_production_feed form input[name='d2']").val());
     request(db_url, pd, function(rs){
       alert("Evento borrado!");
-      set_produ_feed(rs);
+      $div.children().not($div.find("div.buttons")).remove();
+      rs["all_lines"] = true;
+      $div.append(set_table(rs));
     });
   }
 });
