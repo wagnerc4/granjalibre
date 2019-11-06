@@ -1,6 +1,7 @@
 #from re import sub
 from pytz import timezone
 from datetime import datetime
+from py.app_resumens import set_table
 
 
 cr_tz = timezone('America/Costa_Rica')
@@ -343,7 +344,14 @@ def insert_pen_note(dbObj, rq):
 
 #################################### PRODU FEED #########################################
 def produ_feeds(dbObj, rq):
-  return dbObj.getRows("""
+  defs = [{"head":"Id", "foot":"count", "class":"strong"},
+          {"head":"Bodega", "class":"feed"},
+          {"head":"Alimento"},
+          {"head":"Inicial", "foot":"sum"},
+          {"head":"Ingresos", "foot":"sum"},
+          {"head":"Salidas", "foot":"sum"},
+          {"head":"Final", "foot":"sum"}]
+  rows = dbObj.getRows("""
     WITH
       feed_inventory AS (
         SELECT pen_id,
@@ -360,6 +368,7 @@ def produ_feeds(dbObj, rq):
            f.feed, f.initial, f.ingress, f.egress, f.initial + f.ingress - f.egress
     FROM pens p JOIN feed_inventory f ON p.id=f.pen_id
     ORDER BY house, feed;""", (rq['d1'], rq['d1'], rq['d1'], rq['d2']))
+  return set_table(defs, rows)
 
 
 def select_feed_history(dbObj, rq):
@@ -406,7 +415,16 @@ def delete_feed_event(dbObj, rq):
 
 #################################### PRODU STOCK #########################################
 def produ_stock(dbObj, rq):
-  return dbObj.getRows("""
+  defs = [{"head":"Grupo", "foot":"count", "class":"strong"},
+          {"head":"Corral Actual", "class":"group"},
+          {"head":"Edad", "foot":"avg"},
+          {"head":"Consumo", "foot":"sum"},
+          {"head":"Inicial", "foot":"sum"},
+          {"head":"Ingresos", "foot":"sum"},
+          {"head":"Salidas", "foot":"sum"},
+          {"head":"Muertes", "foot":"sum"},
+          {"head":"Final", "foot":"sum", "value":"r[4] + r[5] - r[6] - r[7]"}]
+  rows = dbObj.getRows("""
   SELECT g.id,
          (SELECT (SELECT CONCAT_WS('-',
                            (SELECT pen FROM pens WHERE rgt>(lft+1) AND lft<p.lft AND rgt>p.rgt
@@ -442,6 +460,9 @@ def produ_stock(dbObj, rq):
     FROM groups g
     WHERE date_initial<=%(d2)s AND (date_final>=%(d1)s OR date_final IS NULL)
     ORDER BY house_pen;""", {"d1":rq['d1'],"d2":rq['d2']}) 
+  tmp = [[r[0], r[1], r[2], r[3]] + \
+         ([int(x) for x in r[4].split('_')] if r[4] != '' else [0,0,0,0]) for r in rows]
+  return set_table(defs, tmp)
 
 
 def select_group_history(dbObj, rq):
@@ -452,7 +473,19 @@ def select_group_history(dbObj, rq):
                         id=(SELECT id_of FROM g_ev_stock_move WHERE id_to=e.id)),
                      (SELECT 'move' FROM groups_events WHERE group_id=e.group_id AND
                         id=(SELECT id_to FROM g_ev_stock_move WHERE id_of=e.id))),
-           g_ev_cols_function(tableoid::regclass::name, id)
+           g_ev_cols_function(tableoid::regclass::name, id),
+           (SELECT CONCAT_WS('-',
+                     (SELECT pen FROM pens WHERE rgt>(lft+1) AND lft<p.lft AND rgt>p.rgt
+                      ORDER BY lft DESC LIMIT 1), pen)
+            FROM pens p WHERE id=e.pen_id),
+           CASE WHEN tableoid::regclass::name = 'g_ev_stock'
+                THEN date - (SELECT date_birth FROM g_ev_stock WHERE id=e.id)
+                ELSE (SELECT SUM(total * days) / SUM(total)::NUMERIC
+                      FROM (SELECT ingress - CASE WHEN SUM(ingress-egress-deaths) OVER()=0 AND
+                                                       MAX(id) OVER()=id
+                                                  THEN 0 ELSE egress + deaths END AS total,
+                                   e.date - date_birth AS days
+                            FROM g_ev_stock WHERE group_id=e.group_id AND date<=e.date) t) END
     FROM groups_events e WHERE date>=%s AND date<=%s AND group_id=%s
     ORDER BY date, id;""", (rq['d1'], rq['d2'], rq['group_id']))
 
@@ -478,6 +511,16 @@ def delete_group_event(dbObj, rq):
                         (rq['id'], rq['id']))
     if move:
       other = move[0] if int(rq['id']) == move[1] else move[1]
+      other_group_id = dbObj.getRow("SELECT group_id FROM g_ev_stock WHERE id=%s;", (other, ))[0]
+      if group_data[0] == other_group_id:
+        prev_pen_count = dbObj.getRow("""
+          WITH groups_inventory AS (SELECT (SELECT pen_id FROM groups_events
+                                            WHERE group_id=g.id ORDER BY id DESC LIMIT 1)
+                                    FROM groups g WHERE date_final IS NULL)
+          SELECT COALESCE((SELECT 1 FROM groups_inventory WHERE pen_id=t.pen_id), 0)
+          FROM g_ev_stock t WHERE id=%s;""", (other if other < int(rq['id']) else rq['id'], ))[0]
+        if prev_pen_count > 0:
+          raise Exception("error: corral anterior esta ocupado por otro grupo!")
       feeds_data = dbObj.getRows("""
         SELECT ev_feed_id, (SELECT pens_feeds_id FROM g_ev_feeds WHERE id=sf.ev_feed_id)
         FROM g_ev_stock_feeds sf WHERE ev_stock_id IN(%s, %s);""", (rq['id'], other))
