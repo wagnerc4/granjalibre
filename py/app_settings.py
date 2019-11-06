@@ -1,60 +1,6 @@
 from re import sub
 from json import loads
-from pytz import timezone
-from datetime import datetime
 from hashlib import md5
-
-
-cr_tz = timezone('America/Costa_Rica')
-
-
-############################# QUERYS #############################
-def select_querys_titles(dbObj, rq):
-  return dbObj.getRows("SELECT code, title, MAX(LENGTH(code)) OVER() FROM querys ORDER BY code;")
-
-
-def select_querys_data(dbObj, rq):
-  return dbObj.getRow("SELECT * FROM querys WHERE code=%s;", (rq['code'], ))
-
-
-def select_query(dbObj, rq):
-  return {"rows": dbObj.getRows(rq['query'], rq),
-          "cols": dbObj.getDescription()}
-
-
-def insert_query(dbObj, rq):
-  dbObj.execute("INSERT INTO querys VALUES (DEFAULT, %s, %s, %s, %s, %s, %s, %s);",
-                (rq['query'], rq['defs'], rq['code'], rq['title'], rq['graph_type'] or None,
-                 rq['graph_x'] or None, rq['graph_y'] or None))
-  return select_querys_titles(dbObj, rq)
-
-
-def update_query(dbObj, rq):
-  dbObj.execute("""UPDATE querys SET query=%s, defs=%s, title=%s,
-                                     graph_type=%s, graph_x=%s, graph_y=%s WHERE code=%s;""",
-                (rq['query'], rq['defs'], rq['title'], rq['graph_type'] or None,
-                 rq['graph_x'] or None, rq['graph_y'] or None, rq['code']))
-  return select_querys_titles(dbObj, rq)
-
-
-def delete_query(dbObj, rq):
-  dbObj.execute("DELETE FROM querys WHERE code=%s;", (rq['code'], ))
-  return select_querys_titles(dbObj, rq)
-
-
-# RESUMENS
-def select_query_saved(dbObj, rq):
-  row = dbObj.getRow("""SELECT query, defs, title, graph_type, graph_x, graph_y
-                        FROM querys WHERE code=%s;""", (rq['code'], ))
-  return {"rows": dbObj.getRows(row[0].replace('\\\\', '\n'), rq),
-          "cols": dbObj.getDescription(),
-          "defs": row[1].replace('\\\\', '\n'),
-          "code": rq['code'],
-          "title": row[2],
-          "graph_type": row[3],
-          "graph_x": row[4],
-          "graph_y": row[5],
-          "subquery": rq['subquery'] if 'subquery' in rq else None}
 
 
 ############################# CRONS #############################
@@ -122,10 +68,159 @@ def delete_alert(dbObj, rq):
 
 
 ############################# ROLES #############################
+actions = {
+  "forms_parameters_records": [],
+  "forms_reproduction_events": [
+    "ev_adoption",
+    "get_temperatures",
+    "select_deaths",
+    "ev_farrow",
+    "ev_disease",
+    "validateLitter",
+    "getSemenFarms",
+    "ev_ubication",
+    "select_races",
+    "getAnimal",
+    "getFarmActivity",
+    "ev_dry",
+    "insertAnimalSemen",
+    "ev_note",
+    "ev_service",
+    "ev_treatment",
+    "getAnimalsSemen",
+    "ev_abortion",
+    "getFemaleAdoptive",
+    "insertAnimalOld",
+    "ev_milk",
+    "ev_partial_wean",
+    "ev_semen",
+    "getEartag",
+    "ev_temperature",
+    "ev_sale",
+    "ev_condition",
+    "getGenealogy",
+    "ev_check_neg",
+    "ev_sale_semen",
+    "ev_wean",
+    "setSemenStatus",
+    "getAllHistory",
+    "setEartag",
+    "a_insert",
+    "getAnimalsOld",
+    "ev_delete",
+    "ev_heat",
+    "getMale",
+    "ev_foster",
+    "ev_check_pos",
+    "ev_death",
+    "getHistory",
+    "ev_feed"
+  ],
+  "forms_production_stock": [
+    "produ_stock",
+    "select_group_history",
+    "delete_group_event"
+  ],
+  "settings_roles": [
+    "get_modules_roles",
+    "delete_worker",
+    "insert_worker",
+    "update_worker",
+    "select_workers"
+  ],
+  "forms_parameters_races": [
+    "update_race",
+    "select_races",
+    "insert_race"
+  ],
+  "settings_querys": [
+    "print_pdf",
+    "select_querys_data",
+    "update_query",
+    "select_query",
+    "delete_query",
+    "select_querys_schema_titles",
+    "insert_query"
+  ],
+  "forms_parameters_week_feeds": [
+    "insert_week_feed",
+    "select_week_feeds",
+    "update_week_feed"
+  ],
+  "forms_production_feed": [
+    "produ_feeds",
+    "select_feed_history",
+    "delete_feed_event"
+  ],
+  "settings_alerts": [
+    "insert_alert",
+    "delete_alert",
+    "select_alerts",
+    "select_alerts_data"
+  ],
+  "global_tables": [],
+  "global_records": [
+    "set_valores",
+    "delete_grupo",
+    "get_record",
+    "insert_grupo",
+    "search_cuenta",
+    "select_grupos",
+    "get_valores",
+    "search_cuenta_partidas",
+    "verify_asiento"
+  ],
+  "forms_production_events": [
+    "insert_pen_note",
+    "insert_pen_feed",
+    "search_feed",
+    "insert_pen_sale",
+    "insert_pen_weight",
+    "insert_feed_move",
+    "insert_group_move",
+    "source_pen",
+    "insert_pen_death",
+    "target_pen",
+    "insert_pen_wean",
+    "insert_group_feed",
+    "search_produ_death",
+    "insert_pen_disease",
+    "produ_inventory"
+  ],
+  "global_resumens": [
+    "select_query_saved"
+  ],
+  "forms_parameters_variables": [
+    "update_variable",
+    "select_variables"
+  ],
+  "forms_parameters_prices": [
+    "update_feed",
+    "insert_feed",
+    "select_feeds"
+  ],
+  "forms_reproduction_resumen": [
+    "repro_resumen"
+  ],
+  "forms_parameters_pens": [
+    "insert_pens",
+    "select_pens"
+  ],
+  "forms_calendar": [
+    "select_calendar"
+  ],
+  "forms_parameters_deaths": [
+    "update_death",
+    "insert_death",
+    "select_deaths"
+  ]
+}
+
+
 modules = [
   {"parent":"glb", "title":"Global"},
+  {"parent":"glb", "title":"Tablas", "file":"global_tables"},
   {"parent":"glb", "title":"Resumenes", "file":"global_resumens"},
-  {"parent":"glb", "title":"Grafico Resumenes", "file":"global_graph"},
   {"parent":"glb", "title":"Asientos", "file":"global_records"},
   # CALENDARIO
   {"parent":"cal", "menu":"forms", "title":"Calendario", "file":"forms_calendar"},
@@ -133,7 +228,6 @@ modules = [
   {"parent":"rep", "title":"Reproduccion"},
   {"parent":"rep", "menu":"forms", "title":"Eventos Reproduccion", "file":"forms_reproduction_events"},
   {"parent":"rep", "menu":"forms", "title":"Resumen Reproduccion", "file":"forms_reproduction_resumen"},
-  {"parent":"rep", "menu":"forms", "title":"Resumen Uso Padrotes", "file":"forms_reproduction_males_usage"},
   # PRODUCTION
   {"parent":"pro", "title":"Produccion"},
   {"parent":"pro", "menu":"forms", "title":"Eventos Produccion", "file":"forms_production_events"},
@@ -172,16 +266,19 @@ def get_resumens(dbObj, rq):
     ORDER BY code;""")
 
 
-def get_resumens_data(dbObj, rq):
+def get_resumens_buttons(dbObj, rq):
   access = dbObj.getRow("SELECT access FROM workers WHERE id=%s;", (rq['worker_id'], ))[0]
   return dbObj.getRowsAssoc("""
-    SELECT code, title, defs,
+    SELECT code, title,
            query LIKE %s AS d1,
            query LIKE %s AS d2,
+           query LIKE %s AS g1,
+           query LIKE %s AS g2,
            query LIKE %s AS v,
-           graph_type, graph_x, graph_y
+           query LIKE %s AS c
     FROM querys WHERE code IN %s ORDER BY code;""",
-    ('%%%%(d1)s%%', '%%%%(d2)s%%', '%%%%(v)s%%', tuple(access.split(','))))
+    ('%%%%(d1)s%%', '%%%%(d2)s%%', '%%%%(g1)s%%', '%%%%(g2)s%%', '%%%%(v)s%%', '%%%%(c)s%%',
+     tuple(access.split(','))))
 
 
 def get_modules_roles(dbObj, rq):
@@ -199,11 +296,14 @@ def get_modules_roles(dbObj, rq):
 
 
 def get_menus(dbObj, rq):
-  menus = {"forms":[], "resumens":[], "accounting":[], "settings":[]}
+  menus = {"titles":{}, "forms":[], "resumens":[], "accounting":[], "settings":[]}
   access = dbObj.getRow("SELECT access FROM workers WHERE id=%s;", (rq['worker_id'], ))[0]
   for module in modules:
-    if 'menu' in module and module['file'] in access:
-      menus[module['menu']].append([module['parent'], module['title'], module['file']])
+    if 'menu' in module:
+      if not 'file' in module:
+        menus['titles'][module['parent']] = module['title']
+      elif module['file'] in access:
+        menus[module['menu']].append([module['parent'], module['title'], module['file']])    
   resumens = get_resumens(dbObj, rq)
   for resumen in resumens:
     if resumen[1] in access:
@@ -222,6 +322,15 @@ def get_files(dbObj, rq):
     if 'file' in module and module['file'] in access:
       files.append(module['file'])
   return files
+
+
+def get_actions(dbObj, rq):
+  a = []
+  access = dbObj.getRow("SELECT access FROM workers WHERE id=%s;", (rq['worker_id'], ))[0]
+  for module in modules:
+    if 'file' in module and module['file'] in access:
+      a = a + actions[module['file']]
+  return list(set(a))
 
 
 # WORKERS
