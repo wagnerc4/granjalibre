@@ -32,6 +32,28 @@
   </div>
 </div>
 
+
+<!-- GRAPH MODAL -->
+<div id="animal_graph_modal" class="modal fade" role="dialog" tabindex="-1">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+        <h3 class="modal-title"></h3>
+      </div>
+      <div class="modal-body">
+        <svg width="860" height="500"></svg>
+      </div>
+      <!--div class="modal-footer">
+        <button class="btn btn-info">imprimir</button>
+      </div-->
+    </div>
+  </div>
+</div>
+
+
 <!-- ANIMAL HISTORY MODAL -->
 <div id="history_modal" class="modal fade" role="dialog" tabindex="-1">
   <div class="modal-dialog modal-lg" role="document">
@@ -92,8 +114,7 @@
       <label for="sex1">macho</label>
       <input type="radio" id="sex1" name="a_sex" value="male" />
       <label for="sex2">hembra</label>
-      <input type="radio" id="sex2" name="a_sex" value="female" checked="checked" />
-      <input type="text" name="a_parity" placeholder="partos . . ." size="6" /><br />
+      <input type="radio" id="sex2" name="a_sex" value="female" checked="checked" /><br />
     </form><br /><br />
     <strong>Ingresar Animales con Historia:</strong>
     <p id="animals_old" style="margin-left:25px;"></p>
@@ -126,13 +147,13 @@
   <div id="ev_sale_semen" style="display:none;">
     <form action="#" class="ev_variable" data-animal="">
       <strong>Salida Semen</strong><br />
-      <input type="text" name="ts" class="date" placeholder="salida . . ." size="25" />
+      <input type="text" name="ts" class="date" placeholder="fecha . . ." />
     </form>
   </div>
   <div id="ev_sale" style="display:none;">
     <form action="#" class="ev_variable" data-animal="">
       <strong>Salida</strong><br />
-      <input type="text" name="ts" class="date" placeholder="salida . . ." size="25" />
+      <input type="text" name="ts" class="date" placeholder="fecha . . ." />
       <select id="adultdeathsList" name="death"></select><br />
       <input type="text" class="farm_search" name="farm_search" placeholder="granja (opcional) . . ." autocomplete="off" />
     </form>
@@ -141,7 +162,7 @@
   <div id="ev_heat" style="display:none;">
     <form action="#" class="ev_variable" data-animal="">
       <strong>Celo Sin Servicio</strong><br />
-      <input type="text" name="ts" class="date" placeholder="celo . . ." size="25" />
+      <input type="text" name="ts" class="date" placeholder="fecha . . ." />
       <select name="lordosis"><option>lordosis</option>
                               <option>1</option><option>2</option>
                               <option>3</option><option>4</option>
@@ -151,7 +172,7 @@
   <div id="ev_service" style="display:none;">
     <form action="#" class="ev_variable" data-animal="">
       <strong>Servicio</strong><br />
-      <input type="text" name="ts" class="date" placeholder="servicio . . ." size="25" /><br />
+      <input type="text" name="ts" class="date" placeholder="fecha . . ." /><br />
       <input type="text" id="male_search" name="male" placeholder="macho . . ." autocomplete="off" /><br />
       <input type="text" name="matings" placeholder="cubriciones . . ." />
       <select name="lordosis"><option>lordosis</option>
@@ -168,28 +189,30 @@
   <div id="ev_check_pos" style="display:none;">
     <form action="#" class="ev_variable" data-animal="">
       <strong>Diagnostico +</strong><br />
-      <input type="text" name="ts" class="date" placeholder="diagnostico . . ." size="25" />
+      <input type="text" name="ts" class="date" placeholder="fecha . . ." />
       <select name="test"><option>metodo</option>
                           <option value="us">ultra-sonido</option>
                           <option value="px">palpacion</option>
                           <option value="vs">visual</option></select><br />
+      <textarea name="note" cols="35" rows="5" placeholder="nota . . ."></textarea><br />
     </form>
   </div>
   <div id="ev_check_neg" style="display:none;">
     <form action="#" class="ev_variable" data-animal="">
       <strong>Diagnostico -</strong><br />
-      <input type="text" name="ts" class="date" placeholder="diagnostico . . ." size="25" />
+      <input type="text" name="ts" class="date" placeholder="fecha . . ." />
       <select name="test"><option>metodo</option>
                           <option value="us">ultra-sonido</option>
                           <option value="px">palpacion</option>
                           <option value="vs">visual</option>
-                          <option value="re">repeticion</option></select><br />
+                          <option value="ht">celo</option></select><br />
+      <textarea name="note" cols="35" rows="5" placeholder="nota . . ."></textarea><br />
     </form>
   </div>
   <div id="ev_abortion" style="display:none;">
     <form action="#" class="ev_variable" data-animal="">
       <strong>Aborto</strong><br />
-      <input type="text" name="ts" class="date" placeholder="aborto . . ." size="25" />
+      <input type="text" name="ts" class="date" placeholder="fecha . . ." />
       <label for="abortionInduction">Inducido</label>
       <input type="checkbox" id="abortionInduction" name="inducted" /><br />
     </form>
@@ -197,7 +220,7 @@
   <div id="ev_farrow" style="display:none;">
     <form action="#" class="ev_variable" data-animal="">
       <strong>Parto</strong><br />
-      <input type="text" name="ts" class="date" placeholder="parto . . ." size="25" /><br />
+      <input type="text" name="ts" class="date" placeholder="fecha . . ." /><br />
       <input type="text" name="litter" placeholder="camada . . ." size="7" />
       <input type="text" name="males" placeholder="machos . . ." size="7" />
       <input type="text" name="females" placeholder="hembras . . ." size="7" />
@@ -219,7 +242,7 @@
   <div id="ev_death" style="display:none;">
     <form action="#" class="ev_variable" data-animal="">
       <strong>Baja</strong><br />
-      <input type="text" name="ts" class="date" placeholder="baja . . ." size="25" /><br />
+      <input type="text" name="ts" class="date" placeholder="fecha . . ." /><br />
       <select id="youngdeathsList" name="death"></select>
       <input type="text" name="animals" placeholder="animales . . ." size="7" /><br />
     </form>
@@ -227,7 +250,7 @@
   <div id="ev_foster" style="display:none;">
     <form action="#" class="ev_variable" data-animal="">
       <strong>Adopcion -</strong><br />
-      <input type="text" name="ts" class="date" placeholder="adopcion . . ." size="25" /><br />
+      <input type="text" name="ts" class="date" placeholder="fecha . . ." /><br />
       <input type="text" class="adoption_search" name="mother" placeholder="hacia . . ." autocomplete="off"/>
       <input type="text" name="animals" placeholder="animales . . ." size="7" />
       <input type="text" name="weight" placeholder="peso . . ." size="5" /><br />
@@ -236,7 +259,7 @@
   <div id="ev_adoption" style="display:none;">
     <form action="#" class="ev_variable" data-animal="">
       <strong>Adopcion +</strong><br />
-      <input type="text" name="ts" class="date" placeholder="adopcion . . ." size="25" /><br />
+      <input type="text" name="ts" class="date" placeholder="fecha . . ." /><br />
       <input type="text" class="adoption_search" name="mother" placeholder="desde . . ." autocomplete="off"/>
       <input type="text" name="animals" placeholder="animales . . ." size="7" />
       <input type="text" name="weight" placeholder="peso . . ." size="5" /><br />
@@ -245,7 +268,7 @@
   <div id="ev_partial_wean" style="display:none;">
     <form action="#" class="ev_variable" data-animal="">
       <strong>Destete Parcial</strong><br />
-      <input type="text" name="ts" class="date" placeholder="destete . . ." size="25" /><br />
+      <input type="text" name="ts" class="date" placeholder="fecha . . ." /><br />
       <input type="text" name="animals" placeholder="animales . . ." size="7" />
       <input type="text" name="weight" placeholder="peso . . ." size="5" /><br />
     </form>
@@ -253,7 +276,7 @@
   <div id="ev_wean" style="display:none;">
     <form action="#" class="ev_variable" data-animal="">
       <strong>Destete</strong><br />
-      <input type="text" name="ts" class="date" placeholder="destete . . ." size="25" /><br />
+      <input type="text" name="ts" class="date" placeholder="fecha . . ." /><br />
       <input type="text" name="animals" placeholder="animales . . ." size="7" />
       <input type="text" name="weight" placeholder="peso . . ." size="5" /><br />
     </form>
@@ -261,7 +284,7 @@
   <div id="ev_semen" style="display:none;">
     <form action="#" class="ev_variable" data-animal="">
       <strong>Estraccion</strong><br />
-      <input type="text" name="ts" class="date" placeholder="estraccion . . ." size="25" /><br />
+      <input type="text" name="ts" class="date" placeholder="fecha . . ." /><br />
       <input type="text" name="volumen" placeholder="volumen . . ." />
       <input type="text" name="concentration" placeholder="concentracion . . ." /><br />
       <select name="motility"><option>motilidad</option>
@@ -277,21 +300,21 @@
   <div id="ev_ubication" style="display:none;">
     <form action="#" class="ev_variable" data-animal="">
       <strong>Ubicacion</strong><br />
-      <input type="text" name="ts" class="date" placeholder="movimiento . . ." size="25" />
+      <input type="text" name="ts" class="date" placeholder="fecha . . ." />
       <input type="text" name="ubication" placeholder="ubicacion . . ." /><br />
     </form>
   </div>
   <div id="ev_feed" style="display:none;">
     <form action="#" class="ev_constant" data-animal="">
       <strong>Alimentacion</strong><br />
-      <input type="text" name="ts" class="date" placeholder="alimentacion . . ." size="25" />
+      <input type="text" name="ts" class="date" placeholder="fecha . . ." />
       <input type="text" name="weight" placeholder="peso . . ." size="5" /><br />
     </form>
   </div>
   <div id="ev_condition" style="display:none;">
     <form action="#" class="ev_constant" data-animal="">
       <strong>Condicion</strong><br />
-      <input type="text" name="ts" class="date" placeholder="evaluacion . . ." size="25" /><br />
+      <input type="text" name="ts" class="date" placeholder="fecha . . ." /><br />
       <select name="condition"><option>condicion</option>
                                <option>1</option><option>1.5</option>
                                <option>2</option><option>2.5</option>
@@ -305,7 +328,7 @@
   <div id="ev_milk" style="display:none;">
     <form action="#" class="ev_constant" data-animal="">
       <strong>Leche</strong><br />
-      <input type="text" name="ts" class="date" placeholder="evaluacion . . ." size="25" /><br />
+      <input type="text" name="ts" class="date" placeholder="fecha . . ." /><br />
       <input type="text" name="weight" placeholder="peso . . ." size="5" />
       <select name="quality"><option>calidad</option>
                              <option>1</option><option>2</option>
@@ -316,20 +339,20 @@
   <div id="ev_dry" style="display:none;">
     <form action="#" class="ev_variable" data-animal="">
       <strong>Secado</strong><br />
-      <input type="text" name="ts" class="date" placeholder="secado . . ." size="25" /><br />
+      <input type="text" name="ts" class="date" placeholder="fecha . . ." /><br />
     </form>
   </div>
   <div id="ev_temperature" style="display:none;">
     <form action="#" class="ev_constant" data-animal="">
       <strong>Temperatura</strong><br />
-      <input type="text" name="ts" class="date" placeholder="evaluacion . . ." size="25" />
+      <input type="text" name="ts" class="date" placeholder="fecha . . ." />
       <input type="text" name="temperature" placeholder="grados . . ." size="5" /><br />
     </form>
   </div>
-  <div id="ev_treatment" style="display:none;">
+  <!--div id="ev_treatment" style="display:none;">
     <form action="#" class="ev_variable" data-animal="">
       <strong>Tratamiento</strong><br />
-      <input type="text" name="ts" class="date" placeholder="tratamiento . . ." size="25" /><br />
+      <input type="text" name="ts" class="date" placeholder="fecha . . ." /><br />
       <input type="text" name="treatment" placeholder="medicamento . . ." />
       <input type="text" name="dose" placeholder="dosis (ml,mg,g,ui)/kg . . ." /><br />
       <select name="frecuency"><option>frecuencia (horas)</option>
@@ -342,19 +365,19 @@
                                <option>ip</option><option>sc</option>
                                <option>po</option></select><br />
     </form>
-  </div>
-  <div id="ev_palpation" style="display:none;">
+  </div-->
+  <div id="ev_disease" style="display:none;">
     <form action="#" class="ev_variable" data-animal="">
-      <strong>Palpacion</strong><br />
-      <input type="text" name="ts" class="date" placeholder="palpacion . . ." size="25" /><br />
-      <textarea name="palpation" cols="35" rows="5" placeholder="palpacion . . .">
-      </textarea><br />
+      <strong>Enfermedad</strong><br />
+      <input type="text" name="ts" class="date" placeholder="fecha . . ." /><br />
+      <input type="text" name="disease" placeholder="diagnostico . . ." /><br />
+      <input type="text" name="treatment" placeholder="tratamiento . . ." /><br />
     </form>
   </div>
   <div id="ev_note" style="display:none;">
     <form action="#" class="ev_variable" data-animal="">
       <strong>Nota</strong><br />
-      <input type="text" name="ts" class="date" placeholder="nota . . ." size="25" /><br />
+      <input type="text" name="ts" class="date" placeholder="fecha . . ." /><br />
       <textarea name="note" cols="35" rows="5" placeholder="nota . . .">
       </textarea><br />
     </form>
@@ -581,11 +604,11 @@ $("a[href$='a_genealogy']").click(function(){
 
     //console.log(treeData);
 
-    $("#graph_modal svg").empty();
+    $("#animal_graph_modal svg").empty();
 
-    setTree("#graph_modal", treeData);
+    setTree("#animal_graph_modal", treeData);
 
-    var $modal = $("#graph_modal");
+    var $modal = $("#animal_graph_modal");
     $modal.find("div.modal-header h3").text("Genealogia");
     $modal.modal("show");
 
@@ -608,11 +631,11 @@ $("a[href$='a_graph']").click(function(){
       data.push([rs[k][0], temperature, milk, rs[k][3]]);
     }
 
-    $("#graph_modal svg").empty();
+    $("#animal_graph_modal svg").empty();
 
-    if (data.length) setGraph("#graph_modal", data);
+    if (data.length) setGraph("#animal_graph_modal", data);
 
-    var $modal = $("#graph_modal");
+    var $modal = $("#animal_graph_modal");
     $modal.find("div.modal-header h3").text("Grafico");
     $modal.modal("show");
 
@@ -669,8 +692,8 @@ var eventsDic = {
   "ev_heat": {"name":"celo sin servicio", "cols":["lordosis"]},
   "ev_service": {"name":"servicio", "cols":["padrote", "cubriciones",
                                             "lordosis", "calidad"]},
-  "ev_check_pos": {"name":"diagnostico +", "cols":["examen"]},
-  "ev_check_neg": {"name":"diagnostico -", "cols":["examen"]},
+  "ev_check_pos": {"name":"diagnostico +", "cols":["examen", "nota"]},
+  "ev_check_neg": {"name":"diagnostico -", "cols":["examen", "nota"]},
   "ev_abortion": {"name":"aborto", "cols":["inducido"]},
   "ev_farrow": {"name":"parto", "cols":["camada", "machos", "hembras", "peso",
                             "muertos", "momias", "hernias", "criptorquideos",
@@ -688,9 +711,7 @@ var eventsDic = {
   "ev_milk": {"name":"leche", "cols":["peso", "calidad"]},
   "ev_dry": {"name":"secado", "cols":[]},
   "ev_temperature": {"name":"temperatura", "cols":["temperatura"]},
-  "ev_treatment": {"name":"tratamiento", "cols":["medicamento", "dosis",
-                                           "frecuencia", "dias", "ruta"]},
-  "ev_palpation": {"name":"palpacion", "cols":["palpacion"]},
+  "ev_disease": {"name":"enfermedad", "cols":["diagnostico", "tratamiento"]},
   "ev_note": {"name":"nota", "cols":["nota"]}
 };
 
@@ -838,28 +859,25 @@ $("#a_events > div").on("click", ".ev_constant_delete, .ev_variable_delete", fun
 
 
 ////////////////// RESUMENS ANIMAL HISTORY ////////////////
-
-$(function() {
-  $("table > tbody").on("click", "span.history", function() {
-    var pd = new FormData(),
-        animal = $(this).text();
-    pd.append("action", "getHistory");
-    pd.append("animal", animal);
-    request(db_url, pd, function(rs){
-      var $modal = $("#history_modal"),
-          rules = rs["rules"].split("|"),
-          tmp = ['<option>evento</option>'];
-      for (var k in rules) {
-        tmp.push('<option value="' + rules[k] + '">');
-        tmp.push("Ingresar " + eventsDic[rules[k]]["name"] + '</option>');
-      }
-      $("#a_search").val(animal);
-      $modal.data("animal", animal);
-      $modal.find("div.modal-header h3").text("Animal: "+animal);
-      $modal.find("div.modal-body select").html(tmp.join(""));
-      setHistory($modal.find("div.modal-body table"), rs["ev_variable"]);
-      $modal.modal("show");
-    });
+$("div.container").on("click", "span.history", function() {
+  var pd = new FormData(),
+      animal = $(this).text();
+  pd.append("action", "getHistory");
+  pd.append("animal", animal);
+  request(db_url, pd, function(rs){
+    var $modal = $("#history_modal"),
+        rules = rs["rules"].split("|"),
+        tmp = ['<option>evento</option>'];
+    for (var k in rules) {
+      tmp.push('<option value="' + rules[k] + '">');
+      tmp.push("Ingresar " + eventsDic[rules[k]]["name"] + '</option>');
+    }
+    $("#a_search").val(animal);
+    $modal.data("animal", animal);
+    $modal.find("div.modal-header h3").text("Animal: "+animal);
+    $modal.find("div.modal-body select").html(tmp.join(""));
+    setHistory($modal.find("div.modal-body table"), rs["ev_variable"]);
+    $modal.modal("show");
   });
 });
 
