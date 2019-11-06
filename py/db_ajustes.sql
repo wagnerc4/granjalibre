@@ -27,17 +27,13 @@ CREATE TABLE deaths (
 CREATE TABLE workers (
   id SERIAL PRIMARY KEY NOT NULL,
   worker VARCHAR(50) UNIQUE NOT NULL,
-
   phone VARCHAR(20) UNIQUE NOT NULL,
-
   email VARCHAR(50) UNIQUE NOT NULL,
   pass CHAR(40) NOT NULL,
   privilege VARCHAR(10) NOT NULL,
   access TEXT NOT NULL,
   root BOOLEAN NOT NULL,
-
   bot INTEGER DEFAULT NULL,
-
   CHECK (TRIM(worker) <> '' AND worker !~ '[^a-zA-Z0-9 ().-]+'),
   CHECK (TRIM(phone) <> '' AND phone !~ '[^0-9+-]+'),
   CHECK (TRIM(email) <> '' AND email !~ '[^a-z0-9@_.-]+'),
@@ -69,18 +65,11 @@ CREATE TABLE querys (
   defs TEXT NOT NULL,
   code VARCHAR(50) UNIQUE NOT NULL,
   title VARCHAR(100) UNIQUE NOT NULL,
-  graph_type VARCHAR(20) DEFAULT NULL,
-  graph_x VARCHAR(20) DEFAULT NULL,
-  graph_y VARCHAR(20) DEFAULT NULL,
   CHECK (TRIM(query) <> '' AND query !~* '[^a-z0-9 _\]\[{}()"'';:,.&|?!~$%<>=/*+-\\^]+'),
   CHECK (TRIM(defs) <> '' AND defs !~* '[^a-z0-9 _\]\[{}()"'';:,.&|?!~$%<>=/*+-\\^]+'),
   CHECK (TRIM(code) <> '' AND code !~* '[^a-z0-9_]+'),
-  CHECK (TRIM(title) <> '' AND title !~* '[^a-z0-9 @#&()"'';:,.%<>=/*+-]+'),
-  CHECK (TRIM(graph_type) <> '' AND graph_type !~* '[^a-z0-9_]+'),
-  CHECK (TRIM(graph_x) <> '' AND graph_x !~* '[^0-9,]+'),
-  CHECK (TRIM(graph_y) <> '' AND graph_y !~* '[^0-9,]+')
+  CHECK (TRIM(title) <> '' AND title !~* '[^a-z0-9 @#&()"'';:,.%<>=/*+-]+')
 );
-
 
 ----------------------- ALERTS ------------------
 CREATE TABLE crons (
