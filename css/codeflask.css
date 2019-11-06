@@ -4,18 +4,20 @@
 }
 
 .CodeFlask__textarea,
-.CodeFlask__pre{
+.CodeFlask__pre, 
+code[class*="language-"], 
+pre[class*="language-"]{
     box-sizing:border-box;
     position:absolute;
     top:0;
     left:0;
     width:100%;
-    padding:1rem !important;
+    padding:1rem;
     border:none;
     font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
     font-size:13px;
     background:transparent;
-    white-space:pre-wrap;
+    white-space:pre-wrap !important;
     line-height:1.5em;
     word-wrap: break-word;
 }
@@ -26,7 +28,7 @@
     outline:none;
     resize:none;
     opacity:0.4;
-    color:white;
+    color:#000;
     margin:0;
     z-index:1;
     height:100%;
@@ -64,4 +66,8 @@
 
 .CodeFlask__pre_line-numbers {
     padding-left: 3.8em !important;
+}
+
+.CodeFlask__code_line-numbers {
+    padding: 0 !important;
 }
