@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# ln -s /var/www/granja/logos/
+# ln -s /var/www/granja/node_modules/
 from sys import path
 path.append('/var/www/granja')  # /home/wagner/tmp/paginas/granja
 
@@ -10,10 +12,11 @@ from app_print import set_pdf, print_header, print_resumen, print_repro_resumen
 from telegram import (KeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardRemove)
 from telegram.ext import (Updater, CommandHandler, MessageHandler, Filters)
 
+
 SCHEMA = None
 commands = {'reproduccion': {'description': 'resumen', 'code':''},
             'produccion': {'description': 'inventario',
-                            'code':'resumens_1_produ_stock'},
+                            'code':'resumens_3_produ_stock'},
             'improductivas': {'description': 'inventario',
                                'code':'resumens_1_repro_stock_unproductives'},
             'servidas': {'description': 'inventario',
@@ -22,11 +25,6 @@ commands = {'reproduccion': {'description': 'resumen', 'code':''},
                              'code':'resumens_1_repro_stock_productives'},
             'camadas': {'description': 'inventario',
                          'code':'resumens_1_repro_stock_litters'}}
-
-
-def get_help_text():
-  help_text = ["/%s: %s" % (key, commands[key]['description']) for key in commands]
-  return 'Comandos disponibles: \n' + '\n'.join(help_text)
 
 
 def get_user_id(dbObj, rq):
@@ -49,21 +47,21 @@ def handle_commands(bot, update, args):
   if user_id < 0:
     contact_keyboard = KeyboardButton(text="enviar_contacto", request_contact=True)
     reply_markup = ReplyKeyboardMarkup([[contact_keyboard]])
-    bot.send_message(chat_id=chat_id, text="Acceso no permitido!", reply_markup=reply_markup)
+    bot.send_message(chat_id, "Acceso no permitido!", reply_markup=reply_markup)
   else:
     header = wrapper(print_header, {"schema":SCHEMA, "privilege":"select", "user_id":user_id})
     if 'reproduccion' in command:
       if len(args) < 1:
-        update.message.reply_text('Mantener presionado el comando y luego escribir ' + \
+        bot.send_message(chat_id, 'Mantener presionado el comando y luego escribir ' + \
                                   'fecha inicio y fecha final')
       elif len(args) != 2:
-        update.message.reply_text('Escribir fecha inicial y fecha final.')
+        bot.send_message(chat_id, 'Escribir fecha inicial y fecha final.')
       else:
         d1, d2 = tuple(args)
         if sub('\d{4}\-\d{2}\-\d{2}', '', d1) != '':
-          update.message.reply_text('Fecha inicial mal escrita. ej. yyyy-mm-dd')
+          bot.send_message(chat_id, 'Fecha inicial mal escrita. ej. yyyy-mm-dd')
         elif sub('\d{4}\-\d{2}\-\d{2}', '', d2) != '':
-          update.message.reply_text('Fecha final mal escrita. ej. yyyy-mm-dd')
+          bot.send_message(chat_id, 'Fecha final mal escrita. ej. yyyy-mm-dd')
         else:
           content = wrapper(print_repro_resumen, {"schema":SCHEMA, "privilege":"select",
                                                   "d1":d1, "d2":d2})
@@ -71,7 +69,7 @@ def handle_commands(bot, update, args):
           pdf.name = 'doc.pdf'
           bot.send_document(chat_id, BufferedReader(pdf))
     else:
-      content = wrapper(print_resumen, {"schema":SCHEMA, "privilege":"select",
+      content = wrapper(print_resumen, {"schema":SCHEMA, "privilege":"select", "pdf":True,
                                         "user_id":user_id, "code":commands[command]['code']})
       pdf = BytesIO(set_pdf(header[0], content[0]))
       pdf.name = 'doc.pdf'
@@ -79,20 +77,20 @@ def handle_commands(bot, update, args):
 
 
 def handle_contact(bot, update):
-  chat_id = update.message.chat.id
-  bot.send_chat_action(chat_id, 'typing')
+  bot.send_chat_action(update.message.chat.id, 'typing')
   user_id = wrapper(set_user_id, {"schema":SCHEMA, "privilege":"update",
                                   "uid":update.message.contact.user_id,
                                   "phone":update.message.contact.phone_number})
   if user_id < 0:
-    bot.send_message(chat_id, "Error en verificacion contacto, telefono no autorizado!")
+    update.message.reply_text("Error en verificacion contacto, telefono no autorizado!")
   else:
-    bot.send_message(chat_id, "Verificacion contacto completa!")
-    bot.send_message(chat_id, get_help_text(), reply_markup=ReplyKeyboardRemove())
+    update.message.reply_text("Verificacion contacto completa!",
+                              reply_markup=ReplyKeyboardRemove())
 
 
 def help(bot, update):
-  update.message.reply_text(get_help_text())
+  help_text = ["/%s: %s" % (key, commands[key]['description']) for key in commands]
+  update.message.reply_text('Comandos disponibles: \n' + '\n'.join(help_text))
 
 
 def error(bot, update, error):
