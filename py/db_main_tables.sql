@@ -6,7 +6,7 @@
 CREATE TABLE sessions (
   id CHAR(40) UNIQUE NOT NULL,
   ts INTEGER NOT NULL,
-  data VARCHAR(100)
+  data VARCHAR(240)
 );
 
 /*** MAIN ***/
@@ -108,6 +108,6 @@ GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO update_user;
 
 CREATE USER delete_user;
 GRANT SELECT ON ALL TABLES IN SCHEMA public TO delete_user;
-GRANT SELECT, INSERT ON TABLE public.animals, public.animals_activities, public.animals_semen_activities TO delete_user;
+GRANT SELECT, INSERT, DELETE ON TABLE public.animals, public.animals_activities, public.animals_semen_activities TO delete_user;
 GRANT SELECT, INSERT, DELETE ON TABLE public.animals_semen TO delete_user;
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO delete_user;
