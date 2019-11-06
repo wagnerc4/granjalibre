@@ -13,7 +13,7 @@
     dataType: "json",
     data: function(month, year, callback) {
       var pd = new FormData();
-      pd.append("action", "calendar");
+      pd.append("action", "select_calendar");
       pd.append("start_date", new Date(year, month-1, 1).toSql());
       pd.append("end_date", new Date(year, month, 1).toSql());
       request(db_url, pd, callback);
@@ -23,7 +23,7 @@
           date = new Date(year, month-1, day).toSql();
       if (title) {
         var pd = new FormData();
-        pd.append("action", "calendar");
+        pd.append("action", "select_calendar");
         pd.append("color", "red");
         pd.append("title", title);
         pd.append("start_date", date);
