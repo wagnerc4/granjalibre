@@ -235,7 +235,7 @@ $(document).ready(function() {
 
 $(function() {
   // PRINT
-  $("div.modal div.modal-footer button.print_record").click(function(){
+  $("div.modal-footer button.print_record").click(function(){
     var $modal = $(this).parents("div.modal"),
         title = $modal.find("div.modal-header h3").html(),
         div = $modal.find("div.modal-body").html();
@@ -289,7 +289,7 @@ $(function() {
   });
 
   // RECORD
-  $("table > tbody").on("click", "span.record", function() {
+  $("div.tab-pane, div.modal-body").on("click", "span.record", function() {
     var id = $(this).text(),
         pd = new FormData();
     pd.append("action", "get_record");
