@@ -87,6 +87,7 @@ function formatCurrency(num, dec) {
 function parseFix(v) { return parseFloat(v.toFixed(2)); }
 
 //////////////////////////////// table ///////////////////////////////
+/*
 function setRow(rowtmp) {
   var row=[];
   for (var k in rowtmp) {
@@ -94,7 +95,7 @@ function setRow(rowtmp) {
   }
   return "<td class='first'>"+row.join("</td><td>")+"</td>";
 }
-/*
+
 function arrayToTable(tmp) {
   var rows=[], len=tmp.length;
   for (var i=0; i<len; ++i) {
@@ -102,19 +103,21 @@ function arrayToTable(tmp) {
   }
   return rows.join('');
 }
+*/
 
 function arrayToTreeTable(id, tmp, levels) {
   var parents=[0,1], len=tmp.length;
-  var rows=["<tr id='"+id+"-1' class='parent'>", setRow(tmp[0], []), "</tr>"];
+  var rows=["<tr id='"+id+"-1' class='parent'><td class='first'>", tmp[0].join("</td><td>"), "</td></tr>"];
   for (i=1; i<len; ++i){
     var level=parseInt(levels[i], 10);
     parents[level+1] = i+1;
     parents = parents.slice(0, level+2);
-    rows.push("<tr id='"+id+"-"+(i+1)+"' class='"+(tmp[i][0].match(/bold/)?'parent ':'')+(level?"child-of-"+id+"-"+parents.slice(-2, -1):'')+"'>", setRow(tmp[i], []), "</tr>");
+    rows.push("<tr id='"+id+"-"+(i+1)+"' class='"+(tmp[i][0].match(/bold/)?'parent ':'')+(level?"child-of-"+id+"-"+parents.slice(-2, -1):'')+"'><td class='first'>", tmp[i].join("</td><td>"), "</td></tr>");
   }
   return rows.join('');
 }
 
+/*
 function arrayFilter(a, i, w){
   var j=0;
   while (j<a.length) {
@@ -141,11 +144,11 @@ function newTab(pd) {
   txt += '<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />';
   txt += '<link rel="stylesheet" href="css/monthly.css">';
   txt += '<style>input {display:none}</style>';
-  txt += '<style>table {border-collapse: collapse; border-style: hidden;}</style>';
-  txt += '<style>th {border-top:1px solid #ccc; border-bottom:1px solid #ccc;}</style>';
-  txt += '<style>th, td {text-align:right; vertical-align:top; padding:.3em;}</style>';
-  txt += '<style>th:first-child, td:first-child {text-align:left}</style>';
-  txt += '</head><body>';
+  txt += '<style>.table {border-collapse: collapse; border-style: hidden;}</style>';
+  txt += '<style>.table th {border-top:1px solid #ccc; border-bottom:1px solid #ccc;}</style>';
+  txt += '<style>.table th, .table td {text-align:right; vertical-align:top; padding:.3em;}</style>';
+  txt += '<style>.table th:first-child, .table td:first-child {text-align:left}</style>';
+  txt += '</head><body style="max-width:800px;">';
   txt += '<table><tr><td style="width:550px; vertical-align:middle;">';
   txt += print_header;
   txt += '</td><td style="width:150px;">';
@@ -159,6 +162,30 @@ function newTab(pd) {
   OpenWindow.document.close();
 }
 
+/*
+function newTab(pd) {
+  txt = '<html><head>';
+  txt += '<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />';
+  txt += '<link rel="stylesheet" href="css/bootstrap.min.css">';
+  txt += '<link rel="stylesheet" href="css/monthly.css">';
+  txt += '<style>input {display:none}</style>';
+  txt += '<style>th, td {text-align:right; vertical-align:top;}</style>';
+  txt += '<style>th:first-child, td:first-child {text-align:left}</style>';
+  txt += '</head><body><div class="container">';
+  txt += '<table><tr><td style="width:50%; min-width:500px; vertical-align:middle;">';
+  txt += print_header;
+  txt += '</td><td style="width:50%;">';
+  txt += '<img src="logos/' + logo + '" />';
+  txt += '</td></tr></table>';
+  txt += pd['title'];
+  txt += pd['content'];
+  txt += '</div></body></html>';
+  OpenWindow=window.open('', '');
+  OpenWindow.document.write(txt);
+  OpenWindow.document.close();
+}
+*/
+
 function newTabChk(pd) {
   txt = '<html><head>';
   txt += '<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />';
@@ -171,10 +198,18 @@ function newTabChk(pd) {
 }
 
 function download(content, filename) {
-  var a = document.createElement('a');
-  //var blob = new Blob([content], {'type':'application/octet-stream'});
-  //a.href = window.URL.createObjectURL(blob);
-  a.href = 'data:text/plain;charset=utf-8,' + encodeURIComponent(content);
+  var a = document.createElement('a'),
+      blob = new Blob([content], {'type':'application/octet-stream'});
+  a.href = window.URL.createObjectURL(blob);
+  //a.href = 'data:text/plain;charset=utf-8,' + encodeURIComponent(content);
+  a.download = filename;
+  a.click();
+}
+
+function downloadPDF(content, filename) {
+  var a = document.createElement('a'),
+      blob = new Blob([content], {'type':'application/pdf'});
+  a.href = window.URL.createObjectURL(blob);
   a.download = filename;
   a.click();
 }
@@ -266,6 +301,25 @@ function request(url, pd, response) {
     .always(function(){ $.unblockUI(); });
 }
 
+function request_pdf(url, pd, response) {
+//  if(navigator.onLine) {
+  pd.append("token", token);
+  $.blockUI();
+  $.ajax({type: "POST",
+          url: url.replace(/db$/, 'pdf'),
+          data: pd,
+          contentType: false,
+          processData: false,
+          xhrFields: {responseType: 'blob'}})
+    .done(function(blob){ response(blob); })
+    .fail(function(jqXHR, textStatus){
+      var error = jqXHR.responseText;
+      if (error.indexOf("session error") < 0) alert(error);
+      else window.location.reload(true);
+    })
+    .always(function(){ $.unblockUI(); });
+}
+
 // window.addEventListener('offline', function(){ alert("Sin coneccion!"); });
 
 /*
@@ -283,70 +337,4 @@ function post(url, pd) {
   var inputs = $.map(pd, function(v, k){ return "<input type='hidden' name='"+k+"' value='"+v+"'>"; });
   $('<form action="'+url+'" method="post">'+inputs.join('')+'</form>').appendTo('body').submit().remove();
 }
-*/
-
-///////////////////// autocomplete plugin ////////////////////
-/*
-(function($){
-$.fn.setSearch = function(fn){
-  var timer=null;
-  return this.keyup(function(){
-    var self=$(this);
-    if (!self.next().is('div.suggestionsBox')) {
-      self.after("<div class='suggestionsBox'></div>");
-    }
-    if (self.val().length < 1) {
-      self.next().fadeOut('slow');
-    } else {
-      window.clearTimeout(timer);
-      timer = window.setTimeout(function() {
-        fn(self.val(), function(tmp){
-          if (tmp.length < 1) {
-            self.next().fadeOut('slow');
-	  } else {
-            var rows=[];
-            for (var k in tmp) {
-              var red=tmp[k][1]?" style='color: red;'":'';
-              rows.push('<li', red, '>', tmp[k][0], '</li>');
-            }
-            self.next().fadeIn('slow').html(rows.join(''))
-                .children().click(function () { 
-                  self.val($(this).text());
-                  $('.suggestionsBox').fadeOut();
-                });
-          }
-        });
-      }, 800);
-    }
-  });
-};
-})(jQuery);
-*/
-
-///////////////////// menu plugin ////////////////////
-/*
-(function($){
-$.fn.setMenu = function(fn){
-  return this.click(function(){
-    if ($(this).next().is('div')) {
-      if ($(this).next().is(':visible')) {
-        $('.suggestionsBox').fadeOut('slow');
-      } else {
-        $('.suggestionsBox').fadeOut();
-        $(this).next()
-               .offset({left: $(this).offset().left})
-               .fadeIn('slow')
-               .children().unbind('click').click(function () {
-                 $('.suggestionsBox').fadeOut();
-                 fn($(this).attr('id'));
-               }).hover(function(){ $(this).addClass('ui-state-hover'); },
-                        function(){ $(this).removeClass('ui-state-hover'); });
-      }
-    } else {
-      $('.suggestionsBox').fadeOut();
-      fn($(this).attr('id'));
-    }
-  });
-};
-})(jQuery);
 */
