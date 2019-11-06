@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
-from bottle import app, run, route, static_file, template, request, response
+from bottle import app, run, route, request, response, static_file
 from py.db import wrapper
 from py.session import Session
 from py.app_forms_calendar import *
 from py.app_forms_parameters import *
 from py.app_forms_reproduction import *
 from py.app_forms_production import *
+from py.app_resumens import *
 from py.app_settings import *
+# from py.app_print import *
+from py.app_print import print_pdf
 from py.utilities import unescape
 
 
@@ -43,10 +46,10 @@ def admin_handler(activity):
                     "worker_id":data["id"], "worker":data["worker"]}
     template_data = {"app":"main", "unescape":unescape, "path":activity,
       "token": wrapper(session.insert, {"session_data":session_data}),
-      "worker":data["worker"], "privilege":data["privilege"],
-      "header":name,  # "print_header":data["print_header"], "logo":data["logo"],
-      "resumens_data": wrapper(get_resumens_data, session_data, True),
-      "menus": wrapper(get_menus, session_data), "files": wrapper(get_files, session_data)}
+      "worker":data["worker"], "header":name,  # "print_header":data["print_header"], "logo":data["logo"],
+      "resumens_buttons": wrapper(get_resumens_buttons, session_data, True),
+      "menus": wrapper(get_menus, session_data),
+      "files": wrapper(get_files, session_data)}
   except Exception as e:
     template_data = {"app":"error", "error": str(e), "unescape":unescape,
                      "token":"", "header":name}
@@ -57,15 +60,19 @@ def admin_handler(activity):
 def db_handler(activity):
   session = Session(request.forms['token'])
   try:
-    request.forms.update(wrapper(session.select, {}))
-    rs = wrapper(globals()[request.forms['action']], request.forms, True)
+    session_data = wrapper(session.select, {})
+    actions = wrapper(get_actions, session_data)
+    if request.forms['action'] not in actions:
+      rs = "session error -> accion no permitida!"
+    else:
+      request.forms.update(session_data)
+      rs = wrapper(globals()[request.forms['action']], request.forms, True)
   except Exception as e:
     response.status = 500
     rs = "db error -> " + str(e)
   return rs
 
 
-'''
 @route('/<activity>/pdf', method='POST')
 def pdf_handler(activity):
   session = Session(request.forms['token'])
@@ -79,6 +86,7 @@ def pdf_handler(activity):
   return rs
 
 
+'''
 @route('/<activity>/sms', method='POST')
 def sms_handler(activity):
   response.set_header('Access-Control-Allow-Origin', '*')
