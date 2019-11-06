@@ -3,10 +3,23 @@ from sys import argv
 from pytz import timezone
 from datetime import datetime
 from db import wrapper
-from utilities import send_sms
 
 
 cr_tz = timezone('America/Costa_Rica')
+
+
+def send_sms(phone, msg):
+  url = "https://bulksms.vsms.net/eapi/submission/send_sms/2/2.0"
+  values = {'username':'wagnerc4', 'password':'xxx',
+            'msisdn':"{0}{1}".format(506, phone), 'message':msg}
+  rs = urlopen(Request(url, urlencode(values).encode('ascii')))
+  result = rs.read().decode('utf-8').split('|')
+  status_code = result[0]
+  status_string = result[1]
+  if status_code != '0':
+    raise Exception("SMS error: %s: %s" % (status_code, status_string))
+  else:
+    return result[2]  # batch ID (message sent)
 
 
 def check_alerts(dbObj, rq):
