@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="css/bootstrap.min.css">
   <link rel="stylesheet" href="css/bootstrap-select.min.css">
   <!--link rel="stylesheet" href="css/bootstrap-submenu.min.css"-->
-  <!--link rel="stylesheet" href="css/jquery.treeTable.css" /-->
+  <link rel="stylesheet" href="css/jquery.treeTable.css" />
   <link rel="stylesheet" href="css/monthly.css">
   <style>
     body {padding-top: 60px;}
@@ -27,10 +27,12 @@
       cursor:pointer;}
     .resumen tbody td span.strong, .resumen_ajax tbody td span.strong {
       font-weight: bold; cursor:default;}
-    .resumen tbody td span.red_filled {
+    .resumen tbody td span.red_filled, .resumen_ajax tbody td span.red_filled {
       color: red; font-weight: bold; cursor:default;}
     .resumen tbody td span.red_empty:empty::before {
       color: red; font-size: 20px; font-weight: bold; content: "- - - -"; cursor:default;}
+
+.table-striped > tbody > tr:nth-child(even) { background-color: #f3f3f3; }
 
 .navbar-brand {line-height:12px; padding-top:20px; padding-bottom:5px;}
 .navbar-brand small {display:block; font-size:10px;}
@@ -99,6 +101,31 @@
 
 #calculator_div {top: 6.5em;}
 
+/* vertical panel */
+.panel-container-vertical {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.panel-top {
+  flex: 0 0 auto;
+  width: 100%;
+  white-space: nowrap;
+}
+
+.splitter-horizontal {
+  flex: 0 0 auto;
+  height: 18px;
+  background: url(css/hsizegrip.png) center center no-repeat #535353;
+  cursor: row-resize;
+}
+
+.panel-bottom {
+  flex: 1 1 auto;
+  min-height: 200px;
+}
+
 /* RESUMENS GRAPH */
 .axis--x path { display: none; }
 .line {fill: none; stroke: steelblue; stroke-width: 1px;}
@@ -161,60 +188,6 @@ circle {
   stroke: #000;
   shape-rendering: crispEdges;
 }
-
-
-/* graph */
-/*
-svg {font: 10px sans-serif;}
-
-.axis path, .axis line {
-  fill: none;
-  stroke: grey;
-  stroke-width: 1px;
-  shape-rendering: crispEdges;
-}
-
-.x.axis line {stroke: lightgrey;}
-.x.axis .minor {stroke-opacity: .5;}
-.x.axis path {display: none;}
-.line0 {fill: none; stroke: red; stroke-width: 1px;}
-.line1 {fill: none; stroke: steelblue; stroke-width: 1px;}
-.brush .extent {stroke: #fff; fill-opacity: .125; shape-rendering:
-crispEdges;}
-.xline {stroke:black; stroke-width:2px;}
-.xtext {stroke-width:0.5px;}
-.zoom {cursor: move; fill: none; pointer-events: all;}
-*/
-
-/* autocomplete, menu */
-/*
-.menu button {margin:1px; padding:0; cursor:pointer;}
-
-.suggestionsBox {
-  display: none;
-  position: absolute;
-  margin: 0;
-  padding: 0;
-  width: 275px;
-  background-color: #3e3e3e;
-  -moz-border-radius: 7px;
-  -webkit-border-radius: 7px;
-  border: 2px solid #000;
-  color: #fff;
-  z-index:1200;
-}
-
-.suggestionsBox li {
-  margin: 0 0 3px;
-  padding: 3px;
-  border: 1px solid #3e3e3e;
-  font-weight: bold;
-  /*list-style: none; */
-  cursor: pointer;
-}
-
-.suggestionsBox li:hover { background-color: #659CD8; }
-*/
   </style>
   <script src="js/d3.min.js"></script>
   <script src="js/jsonfn.min.js"></script>
@@ -231,6 +204,7 @@ crispEdges;}
   <script src="js/jquery.treeTable.min.js"></script>
   <script src="js/jquery.simplePagination.js"></script>
   <script src="js/jquery.stickytableheaders.min.js"></script>
+  <script src="js/jquery-resizable.min.js"></script>
   <script src="js/jquery.blockUI.js"></script>
   <script src="js/jquery.md5.min.js"></script>
   <script src="js/monthly.js"></script>
@@ -499,29 +473,16 @@ crispEdges;}
     %include('modules/' + f + '.html')
   %end
     <!-- RESUMENS DIVS -->
-    <script id="resumens_data">
-    var resumens_data = {{!rs['resumens_data']}};
-
-    for (var k in resumens_data) {
-      var code = resumens_data[k]['code'],
-          $div = $('<div class="tab-pane" id="'+code+'"></div>'),
-          $t = $('<table class="table table-striped resumen">' +
-                 '  <caption></caption>' +
-                 '  <thead></thead>' +
-                 '  <tbody></tbody>' +
-                 '  <tfoot></tfoot>' +
-                 '</table>');
-      $t.data("code", code);
-      set_table($t, {"buttons": true, "all_lines": true,
-                     "defs": resumens_data[k]['defs'].replace(/\\\\/g, '')});
-      $t.find("caption h2").html(resumens_data[k]['title']);
-      if (!resumens_data[k]["d1"]) $t.find("caption input[name='desde']").hide();
-      if (!resumens_data[k]["d2"]) $t.find("caption input[name='hasta']").hide();
-      if (!resumens_data[k]["v"]) $t.find("caption input[name='valor']").hide();
-      if (!resumens_data[k]["c"]) $t.find("caption select[name='moneda']").hide();
-      if (!resumens_data[k]["graph_type"]) $t.find("caption button[name='graph']").hide();
-      $div.append($t);
-      $("#resumens_data").before($div);
+    <script id="resumens_buttons">
+    var resumens_buttons = {{!rs['resumens_buttons']}};
+    for (var k in resumens_buttons) {
+      var $div = $('<div class="tab-pane" id="' + resumens_buttons[k]['code'] + '">' +
+                   '  <div class="buttons"></div>' +
+                   '</div>');
+      $div.data("all_lines", true);
+      set_buttons($div.find("div.buttons"), resumens_buttons[k]);
+      set_buttons_click($div.find("div.buttons"));
+      $("#resumens_buttons").before($div);
     }
     </script>
   </div>
