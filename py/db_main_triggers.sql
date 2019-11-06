@@ -186,4 +186,4 @@ CREATE TRIGGER animals_semen_delete_trigger
 
 CREATE TRIGGER animals_semen_activities_insert_trigger
   BEFORE INSERT ON animals_semen_activities
-  FOR EACH ROW EXECUTE PROCEDURE animals_semen_activities_insert_function(); 
+  FOR EACH ROW EXECUTE PROCEDURE animals_semen_activities_insert_function();
