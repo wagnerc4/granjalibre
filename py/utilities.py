@@ -1,16 +1,13 @@
 # coding=utf-8
-from re import sub, search
-from json import JSONEncoder
+from re import sub
+from math import floor
 from decimal import Decimal
-from datetime import date, datetime
+from pytz import timezone
+from datetime import date, datetime, timedelta
+from py.simpleeval import EvalWithCompoundTypes as SimpleEval
 
 
-class jsonEncoder(JSONEncoder):
-  def default(self, obj):
-    if isinstance(obj, Decimal): return float(obj)
-    elif isinstance(obj, date): return str(obj)
-    # return super(jsonEncoder, self).default(obj)
-    return JSONEncoder.default(self, obj)
+cr_tz = timezone('America/Costa_Rica')
 
 
 mapping = {
@@ -27,39 +24,68 @@ def unescape(s):
   return sub(r'(&#\d{3};)', lambda x: mapping[x.group()], s)
 
 
-def thous(x):
-  return sub(r'(\d{3})(?=\d)', r'\1,', str(x)[::-1])[::-1]
+def get_days(x):
+  return floor(x/86400)
 
 
-def sql_local(x):
-  return sub(r'^(\d{4})\-(\d{2})\-(\d{2})', r'\3-\2-\1', x)
+def add_days(x, y):
+  # x = x if isinstance(x, date) else datetime.strptime(x, "%Y-%m-%d")
+  return x + timedelta(days=y)
 
-
-#def sql_local(x):
-#  return datetime.strptime(x, "%Y-%m-%d").strftime("%d-%m-%Y")
 
 def sql_ts(x):
   return datetime.strptime(x, "%Y-%m-%d").strftime("%s")
+
 
 #def sql_lote(x):
 #  return datetime.strptime(x, "%Y-%m-%d").strftime("%j")
 
 
+def sql_local(x):
+  return datetime.strptime(x, "%Y-%m-%d").strftime("%d-%m-%Y")
+
+
+def ts_sql(x):
+  return datetime.fromtimestamp(x).strftime("%Y-%m-%d")
+
+
+def ts_week(x):
+  return int(datetime.fromtimestamp(x).strftime("%W"))
+
+
+def now_ts():
+  return int(datetime.now(cr_tz).strftime("%s"))
+
+
+def thous(x):
+  return sub(r'(\d{3})(?=\d)', r'\1,', str(x)[::-1])[::-1]
+
+
+# def format_currency(x, y):
+#   return thous(round(x, y))
+
+
+def set_cell(fn, row):
+  s = SimpleEval()
+  s.names = {"r":row}
+  s.functions = {"str":str, "int":int, "float":float, "sum":sum, "enumerate":enumerate,
+                 "get_days":get_days, "add_days":add_days, "sql_local":sql_local,
+                 "ts_sql":ts_sql, "ts_week":ts_week, "now_ts":now_ts}
+  try:
+    return s.eval(fn)
+  except Exception as e:
+    return fn
+
+
 '''
-from urllib.parse import urlencode
-from urllib.request import Request, urlopen
+from simpleeval import simple_eval
 
+def safe_lambda(x, y):
+  return lambda z: simple_eval(y, names={x:z})
 
-def send_sms(phone, msg):
-  url = "https://bulksms.vsms.net/eapi/submission/send_sms/2/2.0"
-  values = {'username':'wagnerc4', 'password':'xxx',
-            'msisdn':"{0}{1}".format(506, phone), 'message':msg}
-  rs = urlopen(Request(url, urlencode(values).encode('ascii')))
-  result = rs.read().decode('utf-8').split('|')
-  status_code = result[0]
-  status_string = result[1]
-  if status_code != '0':
-    raise Exception("SMS error: %s: %s" % (status_code, status_string))
-  else:
-    return result[2]  # batch ID (message sent)
+list(filter(safe_lambda('x', 'x > 2'), [1, 2, 3, 4, 5, 6]))
+
+f = simple_eval("sum(list(map(safe_lambda('x', 'x[1] if x[0] == 1 else 0'), r)))",
+                names={"r":[[1, 2], [1, 3], [2, 4], [2, 5]]},
+                functions={"sum":sum, "list":list, "map":map, "safe_lambda":safe_lambda})
 '''
