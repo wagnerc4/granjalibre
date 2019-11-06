@@ -64,6 +64,61 @@ ALTER SEQUENCE deaths_id_seq RESTART WITH 22;
 /*******************************************************************/
 
 /************************ SELECT FUNCTIONS *************************/
+
+-- groups: week, month, year, worker, parity, race, animal
+CREATE OR REPLACE FUNCTION get_events_querys(ids INT[], d1 DATE, d2 DATE, g1 TEXT, g2 TEXT)
+RETURNS TABLE(x TEXT, y TEXT, z NUMERIC) AS $$
+DECLARE
+  r RECORD;
+BEGIN
+  g1 := REPLACE(g1, 'parity', 'parity_char');
+  g2 := REPLACE(g2, 'parity', 'parity_char');
+  g2 := CASE WHEN g1 <> g2 AND g2 <> '' THEN g2 ELSE NULL END;
+  FOR r IN SELECT * FROM events_querys WHERE id IN (SELECT UNNEST(ids)) ORDER BY lft LOOP
+    RETURN QUERY EXECUTE
+      FORMAT('WITH t AS(SELECT * FROM %s t,
+                        LATERAL (SELECT (SELECT animal FROM animals WHERE id=t.animal_id),
+                                        (SELECT race FROM races WHERE id=t.race_id),
+                                        (SELECT worker FROM workers WHERE id=t.worker_id),
+                                        TO_CHAR(t.parity, ''00'') AS parity_char,
+                                        TO_CHAR(TO_TIMESTAMP(t.ts), ''YYYY-WW'') AS week,
+                                        TO_CHAR(TO_TIMESTAMP(t.ts), ''YYYY-mm'') AS month,
+                                        TO_CHAR(TO_TIMESTAMP(t.ts), ''YYYY'') AS year) g
+                        WHERE TO_TIMESTAMP(ts)::DATE >= ''%s'' AND
+                              TO_TIMESTAMP(ts)::DATE <= ''%s'')
+              SELECT CONCAT_WS(''_'', ''%s'', %s) AS x, %s::TEXT AS y, ROUND(%s, %s)
+              FROM t GROUP BY %s UNION
+              SELECT CONCAT_WS(''_'', ''%s'', %s), NULL, ROUND(%s, %s)
+              FROM t %s ORDER BY y, x;', FORMAT(r.tbl, d1, d2), d1, d2,
+             r.title, COALESCE(g2, 'NULL'), g1,
+             CASE WHEN r.agg AND g1 IN ('year', 'month', 'week') AND g2 IS NULL
+                  THEN 'SUM(' || r.var || ') OVER (ORDER BY ' || g1 || ')' ELSE r.var END, r.rnd,
+             CONCAT_WS(',', g1, g2),
+             r.title, COALESCE(g2, 'NULL'), r.var, r.rnd,
+             CASE WHEN g2 IS NULL THEN '' ELSE 'GROUP BY ' || g2 END);
+  END LOOP;
+END;
+$$
+LANGUAGE plpgsql;
+
+/*
+SELECT id, title, tbl FROM events_querys ORDER BY id;
+
+-- SEVICIOS
+SELECT * FROM get_events_querys(ARRAY[2,3,4,5,6,7,8,9,10,11,12,13,14], '2018-01-01', '2018-08-30', 'month', '') \crosstabview
+
+-- PARTOS
+SELECT * FROM get_events_querys(ARRAY[16,17,18,19,20,21,22,23,24,25,26,27], '2018-01-01', '2018-08-30', 'month', '') \crosstabview
+
+-- DESTETES
+SELECT * FROM get_events_querys(ARRAY[29,30,31,32,33,34,35,36,37,38], '2018-01-01', '2018-08-30', 'month', '') \crosstabview
+
+-- INVENTARIOS
+SELECT * FROM get_events_querys(ARRAY[40,41,42,43,44,45,46,47], '2018-01-01', '2018-08-30', 'month', '') \crosstabview
+
+*/
+
+
 /*
 CREATE OR REPLACE FUNCTION animal_genealogy_function(_id INTEGER)
 RETURNS TABLE(a_id INTEGER, a_path TEXT, a_parents_id TEXT, a_animal TEXT,
@@ -174,7 +229,7 @@ BEGIN
         WHEN 'ev_wean' THEN 'heat|service|sale'
       END;
     END IF;
-    rules := rules || '|temperature|treatment|palpation|note';
+    rules := rules || '|temperature|disease|note';
   END IF;
   RETURN ARRAY[status, REGEXP_REPLACE(rules, '^|\m', 'ev_', 'g')];
 END;
@@ -204,8 +259,8 @@ CASE WHEN (SELECT last_a_id FROM public.animal_information(t.animal_id)) <>
 END'
     WHEN 'ev_heat' THEN 'lordosis'
     WHEN 'ev_service' THEN '(SELECT animal FROM animals WHERE id=t.male_id), matings, lordosis, quality'
-    WHEN 'ev_check_pos' THEN 'test'
-    WHEN 'ev_check_neg' THEN 'test'
+    WHEN 'ev_check_pos' THEN 'test, note'
+    WHEN 'ev_check_neg' THEN 'test, note'
     WHEN 'ev_abortion' THEN 'inducted'
     WHEN 'ev_farrow' THEN 'litter, males, females, weight, deaths, mummies, hernias, cryptorchids, dystocia, retention, inducted, asisted'
     WHEN 'ev_death' THEN '(SELECT death FROM deaths WHERE id=t.death_id), animals'
@@ -222,8 +277,7 @@ END'
     WHEN 'ev_dry' THEN ''''''
     WHEN 'ev_temperature' THEN 'temperature'
     -------------------------------------------------
-    WHEN 'ev_treatment' THEN 'treatment, dose, frequency, days, route'
-    WHEN 'ev_palpation' THEN 'palpation'
+    WHEN 'ev_disease' THEN 'disease, treatment'    -- WHEN 'ev_treatment' THEN 'treatment, dose, frequency, days, route'
     WHEN 'ev_note' THEN 'note'
   END;
   RETURN QUERY EXECUTE 'SELECT CONCAT_WS(''_'', ' || 
@@ -352,26 +406,26 @@ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION animal_new_insert_function(
   a_entry INTEGER, a_name VARCHAR, a_pedigree VARCHAR,
   litter_a_id INTEGER, a_litter VARCHAR, a_birth INTEGER,
-  a_race VARCHAR, a_sex VARCHAR, a_parity INTEGER) RETURNS VOID AS $$
+  a_race VARCHAR, a_sex VARCHAR, _worker VARCHAR) RETURNS VOID AS $$
 DECLARE
   l_info RECORD;
   a_id INTEGER;
 BEGIN
   RAISE NOTICE 'Validating litter!';
-  SELECT * FROM litter_info_function(litter_a_id, a_litter) INTO l_info;
-  IF l_info IS NOT NULL AND l_info.birth != a_birth OR
-     l_info IS NOT NULL AND l_info._race != a_race THEN
-    RAISE EXCEPTION 'Error en camada: %!', a_litter;
+  IF litter_a_id > 0 THEN
+    SELECT * FROM litter_info_function(litter_a_id, a_litter) INTO l_info;
+    IF l_info IS NOT NULL AND l_info.birth != a_birth OR
+       l_info IS NOT NULL AND l_info._race != a_race THEN
+      RAISE EXCEPTION 'Error en camada: %!', a_litter;
+    END IF;
+    INSERT INTO public.animals
+    VALUES(DEFAULT, l_info.father_id, l_info.mother_id) RETURNING id INTO a_id;
+  ELSE
+    INSERT INTO public.animals VALUES(DEFAULT, NULL, NULL) RETURNING id INTO a_id;
   END IF;
-
 
   --TODO not validate litter, select independ mother or father
 
-
-  RAISE NOTICE 'Inserting animal!';
-  --
-  INSERT INTO public.animals
-  VALUES(DEFAULT, l_info.father_id, l_info.mother_id) RETURNING id INTO a_id;
   INSERT INTO public.animals_activities
   VALUES(DEFAULT, a_id, REGEXP_REPLACE(CURRENT_SCHEMA(), '\D+', '')::INTEGER);
   --
@@ -379,24 +433,28 @@ BEGIN
   VALUES(a_id, (SELECT id FROM races WHERE race=a_race), a_name, a_pedigree,
          a_litter, a_birth, EXTRACT(EPOCH FROM NOW())::INTEGER);
   IF a_sex = 'female'
-    THEN INSERT INTO ev_entry_female VALUES(DEFAULT, a_id, a_entry, a_parity);
-    ELSE INSERT INTO ev_entry_male VALUES(DEFAULT, a_id, a_entry, 0);
+    THEN INSERT INTO ev_entry_female
+         VALUES(DEFAULT, a_id, (SELECT id FROM races WHERE race=a_race),
+                (SELECT id FROM workers WHERE worker=_worker), a_entry, 0);
+    ELSE INSERT INTO ev_entry_male
+         VALUES(DEFAULT, a_id, (SELECT id FROM races WHERE race=a_race),
+                (SELECT id FROM workers WHERE worker=_worker), a_entry, 0);
   END IF;
 END;
 $$
 LANGUAGE plpgsql;
 
 
-CREATE OR REPLACE FUNCTION animal_old_insert_function(_id INTEGER)
+CREATE OR REPLACE FUNCTION animal_old_insert_function(_id INTEGER, _worker VARCHAR)
 RETURNS VOID AS $$
 DECLARE
   a_info RECORD;
-  sale_info RECORD;
+  sale_ts INTEGER;
 BEGIN
   RAISE NOTICE 'Selecting animal info!';
   SELECT * FROM public.animal_information(_id) INTO a_info;
-  EXECUTE 'SELECT ts, parity FROM activity_' || a_info.prev_a_id || '.ev_sale
-           WHERE animal_id=' || _id INTO sale_info;
+  EXECUTE 'SELECT ts FROM activity_' || a_info.prev_a_id || '.ev_sale
+           WHERE animal_id=' || _id INTO sale_ts;
   RAISE NOTICE 'Validating animal!';
   IF a_info.last_a_id <> REGEXP_REPLACE(CURRENT_SCHEMA(), '\D+', '')::INTEGER
     THEN RAISE EXCEPTION 'Ultima actividad no corresponde a actual!';
@@ -412,16 +470,18 @@ BEGIN
          EXTRACT(EPOCH FROM NOW())::INTEGER);
   IF a_info.female
     THEN INSERT INTO ev_entry_female
-         VALUES(DEFAULT, _id, sale_info.ts, sale_info.parity);
+         VALUES(DEFAULT, _id, (SELECT id FROM races WHERE race=a_info.race),
+                (SELECT id FROM workers WHERE worker=_worker), sale_ts, 0);
     ELSE INSERT INTO ev_entry_male
-         VALUES(DEFAULT, _id, sale_info.ts, 0);
+         VALUES(DEFAULT, _id, (SELECT id FROM races WHERE race=a_info.race),
+                (SELECT id FROM workers WHERE worker=_worker), sale_ts, 0);
   END IF;
 END;
 $$
 LANGUAGE plpgsql;
 
 
-CREATE OR REPLACE FUNCTION animal_semen_insert_function(_id INT, _ts INT)
+CREATE OR REPLACE FUNCTION animal_semen_insert_function(_id INT, _ts INT, _worker VARCHAR)
 RETURNS VOID AS $$
 DECLARE
   current_activity INTEGER;
@@ -457,7 +517,9 @@ BEGIN
   END IF;
   --
   RAISE NOTICE 'Inserting entry semen!';
-  INSERT INTO ev_entry_semen VALUES(DEFAULT, _id, _ts, 0);
+  INSERT INTO ev_entry_semen
+         VALUES(DEFAULT, _id, (SELECT id FROM races WHERE race=a_info.race),
+                (SELECT id FROM workers WHERE worker=_worker), _ts, 0);
   --
   RAISE NOTICE 'Inserting public animals semen activity!';
   INSERT INTO public.animals_semen_activities
@@ -846,14 +908,10 @@ CREATE TRIGGER ev_temperature_insert_trigger
   BEFORE INSERT ON ev_temperature
   FOR EACH ROW EXECUTE PROCEDURE ev_insert_function(); 
 
-CREATE TRIGGER ev_treatment_insert_trigger
-  BEFORE INSERT ON ev_treatment
-  FOR EACH ROW EXECUTE PROCEDURE ev_insert_function(); 
-
-CREATE TRIGGER ev_palpation_insert_trigger
-  BEFORE INSERT ON ev_palpation
+CREATE TRIGGER ev_disease_insert_trigger
+  BEFORE INSERT ON ev_disease
   FOR EACH ROW EXECUTE PROCEDURE ev_insert_function(); 
 
 CREATE TRIGGER ev_note_insert_trigger
   BEFORE INSERT ON ev_note
-  FOR EACH ROW EXECUTE PROCEDURE ev_insert_function(); 
+  FOR EACH ROW EXECUTE PROCEDURE ev_insert_function();
