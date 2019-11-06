@@ -1,5 +1,5 @@
 # CALENDARIO
-def calendar(dbObj, rq):
+def select_calendar(dbObj, rq):
   if "title" in rq:
     return dbObj.getRowsAssoc("""
       INSERT INTO calendar VALUES(DEFAULT, %s, %s, %s, %s, %s)
