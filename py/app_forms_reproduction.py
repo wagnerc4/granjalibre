@@ -49,8 +49,6 @@ def getFemaleAdoptive(dbObj, rq):
 
 
 ######################################################################
-
-
 def validateLitter(dbObj, rq):
   return dbObj.getRow("SELECT * FROM litter_info_function(%s, %s);",
                       (sub(r'.+(?=\d+$)', r'', rq["farm_search"]), rq['litter']))
@@ -61,7 +59,7 @@ def a_insert(dbObj, rq):
     SELECT animal_new_insert_function(%s,%s,%s,%s,%s,%s,%s,%s,%s);""",
     (sql_ts(rq['a_entry']), rq['a_name'], rq['a_pedigree'] or None,
      sub(r'.+(?=\d+$)', r'', rq["farm_search"]), rq['a_litter'],
-     sql_ts(rq['a_birth']), rq['a_race'], rq['a_sex'], rq['a_parity'] or 0))
+     sql_ts(rq['a_birth']), rq['a_race'], rq['a_sex'], rq["worker"]))
 
 
 def getAnimalsOld(dbObj, rq):
@@ -74,7 +72,8 @@ def getAnimalsOld(dbObj, rq):
 
 
 def insertAnimalOld(dbObj, rq):
-  dbObj.execute("SELECT animal_old_insert_function(%s);", (rq['id'], ))
+  dbObj.execute("SELECT animal_old_insert_function(%s, %s);", (rq['id'], rq["worker"]))
+
 
 
 def getAnimalsSemen(dbObj, rq):
@@ -89,8 +88,8 @@ def getAnimalsSemen(dbObj, rq):
 
 
 def insertAnimalSemen(dbObj, rq):
-  dbObj.execute("SELECT animal_semen_insert_function(%s, %s);",
-                (rq['id'], sql_ts(rq['ts'])))
+  dbObj.execute("SELECT animal_semen_insert_function(%s, %s, %s);",
+                (rq['id'], sql_ts(rq['ts'], rq["worker"])))
 
 
 ######################################################################
@@ -122,7 +121,7 @@ def get_temperatures(dbObj, rq):
                        'ev_milk'::regclass::oid,
                        'ev_dry'::regclass::oid,
                        'ev_temperature'::regclass::oid,
-                       'ev_treatment'::regclass::oid)
+                       'ev_disease'::regclass::oid)
     ORDER BY ts, id;""", (rq['animal'], ))
 
 
@@ -196,252 +195,345 @@ def getHistory(dbObj, rq):
 
 
 def ev_sale_semen(dbObj, rq):
-  ids = dbObj.getRow("""INSERT INTO ev_sale_semen
-                        VALUES(DEFAULT, (SELECT id FROM animals WHERE animal=%s), %s, 0)
-                        RETURNING id, animal_id;""",
-                     (rq["animal"], sql_ts(rq["ts"])))
+  ids = dbObj.getRow("""
+    INSERT INTO ev_sale_semen
+    VALUES(DEFAULT,
+           (SELECT id FROM animals WHERE animal=%s),
+           (SELECT race_id FROM animals WHERE animal=%s),
+           (SELECT id FROM workers WHERE worker=%s), %s, 0)
+    RETURNING id, animal_id;""",
+    (rq["animal"], rq["animal"], rq["worker"], sql_ts(rq["ts"])))
   return {"ev_variable": dbObj.getRow("SELECT * FROM ev_data_function(%s);", (ids[0], )),
           "rules": dbObj.getRow("SELECT animal_rules_function(%s);", (ids[1], ))[0][1]}
 
 
 def ev_sale(dbObj, rq):
-  ids = dbObj.getRow("""INSERT INTO ev_sale
-                        VALUES(DEFAULT, (SELECT id FROM animals WHERE animal=%s),
-                               %s, 0, (SELECT id FROM deaths WHERE death=%s))
-                        RETURNING id, animal_id;""",
-                     (rq["animal"], sql_ts(rq["ts"]), rq["death"]))
-  dbObj.execute("""INSERT INTO public.animals_activities
-                   VALUES(DEFAULT, %s, %s);""",
+  ids = dbObj.getRow("""
+    INSERT INTO ev_sale
+    VALUES(DEFAULT,
+           (SELECT id FROM animals WHERE animal=%s),
+           (SELECT race_id FROM animals WHERE animal=%s),
+           (SELECT id FROM workers WHERE worker=%s),
+           %s, 0, (SELECT id FROM deaths WHERE death=%s))
+    RETURNING id, animal_id;""",
+    (rq["animal"], rq["animal"], rq["worker"], sql_ts(rq["ts"]), rq["death"]))
+  dbObj.execute("INSERT INTO public.animals_activities VALUES(DEFAULT, %s, %s);",
                 (ids[1], sub(r'.+(?=\d+$)', r'', rq["farm_search"]) or None))
   return {"ev_variable": dbObj.getRow("SELECT * FROM ev_data_function(%s);", (ids[0], )),
           "rules": dbObj.getRow("SELECT animal_rules_function(%s);", (ids[1], ))[0][1]}
 
 
 def ev_heat(dbObj, rq):
-  ids = dbObj.getRow("""INSERT INTO ev_heat
-                        VALUES(DEFAULT, (SELECT id FROM animals WHERE animal=%s), %s, 0, %s)
-                        RETURNING id, animal_id;""",
-                     (rq["animal"], sql_ts(rq["ts"]), rq["lordosis"]))
+  ids = dbObj.getRow("""
+    INSERT INTO ev_heat
+    VALUES(DEFAULT,
+           (SELECT id FROM animals WHERE animal=%s),
+           (SELECT race_id FROM animals WHERE animal=%s),
+           (SELECT id FROM workers WHERE worker=%s), %s, 0, %s)
+    RETURNING id, animal_id;""",
+    (rq["animal"], rq["animal"], rq["worker"], sql_ts(rq["ts"]), rq["lordosis"]))
   return {"ev_variable": dbObj.getRow("SELECT * FROM ev_data_function(%s);", (ids[0], )),
           "rules": dbObj.getRow("SELECT animal_rules_function(%s);", (ids[1], ))[0][1]}
 
 
 def ev_service(dbObj, rq):
-  ids = dbObj.getRow("""INSERT INTO ev_service
-                        VALUES(DEFAULT, (SELECT id FROM animals WHERE animal=%s),
-                               %s, 0, (SELECT id FROM animals WHERE animal=%s), %s, %s,%s)
-                        RETURNING id, animal_id;""",
-                     (rq["animal"], sql_ts(rq["ts"]), rq["male"],
-                      rq["matings"], rq["lordosis"], rq["quality"]))
+  ids = dbObj.getRow("""
+    INSERT INTO ev_service
+    VALUES(DEFAULT,
+           (SELECT id FROM animals WHERE animal=%s),
+           (SELECT race_id FROM animals WHERE animal=%s),
+           (SELECT id FROM workers WHERE worker=%s),
+           %s, 0, (SELECT id FROM animals WHERE animal=%s), %s, %s,%s, FALSE)
+    RETURNING id, animal_id, parity;""",
+    (rq["animal"], rq["animal"], rq["worker"], sql_ts(rq["ts"]),
+     rq["male"], rq["matings"], rq["lordosis"], rq["quality"]))
+  dbObj.execute("""
+    UPDATE ev_service
+    SET repeat=EXISTS(SELECT id FROM ev_service WHERE id<%s AND animal_id=%s AND parity=%s)
+    WHERE id=%s""", (ids[0], ids[1], ids[2], ids[0]))
   return {"ev_variable": dbObj.getRow("SELECT * FROM ev_data_function(%s);", (ids[0], )),
           "rules": dbObj.getRow("SELECT animal_rules_function(%s);", (ids[1], ))[0][1]}
 
 
 def ev_check_pos(dbObj, rq):
-  ids = dbObj.getRow("""INSERT INTO ev_check_pos
-                        VALUES(DEFAULT, (SELECT id FROM animals WHERE animal=%s), %s, 0, %s)
-                        RETURNING id, animal_id;""",
-                     (rq["animal"], sql_ts(rq["ts"]), rq["test"]))
+  print(rq["note"])
+  ids = dbObj.getRow("""
+    INSERT INTO ev_check_pos
+    VALUES(DEFAULT,
+           (SELECT id FROM animals WHERE animal=%s),
+           (SELECT race_id FROM animals WHERE animal=%s),
+           (SELECT id FROM workers WHERE worker=%s), %s, 0, %s, %s)
+    RETURNING id, animal_id;""",
+    (rq["animal"], rq["animal"], rq["worker"], sql_ts(rq["ts"]), rq["test"],
+     None if rq["note"] == '' else rq["note"]))
   return {"ev_variable": dbObj.getRow("SELECT * FROM ev_data_function(%s);", (ids[0], )),
           "rules": dbObj.getRow("SELECT animal_rules_function(%s);", (ids[1], ))[0][1]}
 
 
 def ev_check_neg(dbObj, rq):
-  ids = dbObj.getRow("""INSERT INTO ev_check_neg
-                        VALUES(DEFAULT, (SELECT id FROM animals WHERE animal=%s), %s, 0, %s)
-                        RETURNING id, animal_id;""",
-                     (rq["animal"], sql_ts(rq["ts"]), rq["test"]))
+  ids = dbObj.getRow("""
+    INSERT INTO ev_check_neg
+    VALUES(DEFAULT,
+           (SELECT id FROM animals WHERE animal=%s),
+           (SELECT race_id FROM animals WHERE animal=%s),
+           (SELECT id FROM workers WHERE worker=%s), %s, 0, %s, %s)
+    RETURNING id, animal_id;""",
+    (rq["animal"], rq["animal"], rq["worker"], sql_ts(rq["ts"]), rq["test"],
+     None if rq["note"] == '' else rq["note"]))
   return {"ev_variable": dbObj.getRow("SELECT * FROM ev_data_function(%s);", (ids[0], )),
           "rules": dbObj.getRow("SELECT animal_rules_function(%s);", (ids[1], ))[0][1]}
 
 
 def ev_abortion(dbObj, rq):
-  ids = dbObj.getRow("""INSERT INTO ev_abortion
-                        VALUES(DEFAULT, (SELECT id FROM animals WHERE animal=%s), %s, 0, %s)
-                        RETURNING id, animal_id;""",
-                     (rq["animal"], sql_ts(rq["ts"]), 1 if "inducted" in rq else 0))
+  ids = dbObj.getRow("""
+    INSERT INTO ev_abortion
+    VALUES(DEFAULT,
+           (SELECT id FROM animals WHERE animal=%s),
+           (SELECT race_id FROM animals WHERE animal=%s),
+           (SELECT id FROM workers WHERE worker=%s), %s, 0, %s)
+    RETURNING id, animal_id;""",
+    (rq["animal"], rq["animal"], rq["worker"], sql_ts(rq["ts"]), "inducted" in rq))
   return {"ev_variable": dbObj.getRow("SELECT * FROM ev_data_function(%s);", (ids[0], )),
           "rules": dbObj.getRow("SELECT animal_rules_function(%s);", (ids[1], ))[0][1]}
 
 
 def ev_farrow(dbObj, rq):
-  ids = dbObj.getRow("""INSERT INTO ev_farrow
-                        VALUES(DEFAULT, (SELECT id FROM animals WHERE animal=%s),
-                               %s, 0, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                        RETURNING id, animal_id;""",
-                     (rq["animal"], sql_ts(rq["ts"]), rq["litter"], rq["males"], rq["females"],
-                      rq["weight"], rq["deaths"], rq["mummies"], rq["hernias"],rq["cryptorchids"],
-                      1 if "dystocia" in rq else 0, 1 if "retention" in rq else 0,
-                      1 if "inducted" in rq else 0, 1 if "asisted" in rq else 0))
+  ids = dbObj.getRow("""
+    INSERT INTO ev_farrow
+    VALUES(DEFAULT,
+           (SELECT id FROM animals WHERE animal=%s),
+           (SELECT race_id FROM animals WHERE animal=%s),
+           (SELECT id FROM workers WHERE worker=%s),
+           %s, 0, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+    RETURNING id, animal_id;""",
+    (rq["animal"], rq["animal"], rq["worker"], sql_ts(rq["ts"]), rq["litter"], rq["males"],
+     rq["females"], rq["weight"], rq["deaths"], rq["mummies"], rq["hernias"],rq["cryptorchids"],
+     "dystocia" in rq, "retention" in rq, "inducted" in rq, "asisted" in rq))
   return {"ev_variable": dbObj.getRow("SELECT * FROM ev_data_function(%s);", (ids[0], )),
           "rules": dbObj.getRow("SELECT animal_rules_function(%s);", (ids[1], ))[0][1]}
 
 
 def ev_death(dbObj, rq):
-  ids = dbObj.getRow("""INSERT INTO ev_death
-                        VALUES(DEFAULT, (SELECT id FROM animals WHERE animal=%s),
-                               %s, 0, (SELECT id FROM deaths WHERE death=%s), %s)
-                        RETURNING id, animal_id;""",
-                     (rq["animal"], sql_ts(rq["ts"]), rq["death"], rq["animals"]))
+  ids = dbObj.getRow("""
+    INSERT INTO ev_death
+    VALUES(DEFAULT,
+           (SELECT id FROM animals WHERE animal=%s),
+           (SELECT race_id FROM animals WHERE animal=%s),
+           (SELECT id FROM workers WHERE worker=%s),
+           %s, 0, (SELECT id FROM deaths WHERE death=%s), %s)
+    RETURNING id, animal_id;""",
+    (rq["animal"], rq["animal"], rq["worker"], sql_ts(rq["ts"]), rq["death"], rq["animals"]))
   return {"ev_variable": dbObj.getRow("SELECT * FROM ev_data_function(%s);", (ids[0], )),
           "rules": dbObj.getRow("SELECT animal_rules_function(%s);", (ids[1], ))[0][1]}
 
 
 def ev_foster(dbObj, rq):
-  ids = dbObj.getRow("""INSERT INTO ev_foster
-                        VALUES(DEFAULT, (SELECT id FROM animals WHERE animal=%s), %s, 0, %s, %s)
-                        RETURNING id, animal_id;""",
-                     (rq["animal"], sql_ts(rq["ts"]), rq["animals"], rq["weight"]))
-  dbObj.execute("""INSERT INTO ev_adoption
-                   VALUES(DEFAULT, (SELECT id FROM animals WHERE animal=%s), %s, 0, %s, %s);""",
-                (rq["mother"], sql_ts(rq["ts"]), rq["animals"], rq["weight"]))
+  ids = dbObj.getRow("""
+    INSERT INTO ev_foster
+    VALUES(DEFAULT,
+           (SELECT id FROM animals WHERE animal=%s),
+           (SELECT race_id FROM animals WHERE animal=%s),
+           (SELECT id FROM workers WHERE worker=%s), %s, 0, %s, %s)
+    RETURNING id, animal_id;""",
+    (rq["animal"], rq["animal"], rq["worker"], sql_ts(rq["ts"]), rq["animals"], rq["weight"]))
+  dbObj.execute("""
+    INSERT INTO ev_adoption
+    VALUES(DEFAULT,
+           (SELECT id FROM animals WHERE animal=%s),
+           (SELECT race_id FROM animals WHERE animal=%s),
+           (SELECT id FROM workers WHERE worker=%s), %s, 0, %s, %s);""",
+    (rq["mother"], rq["mother"], rq["worker"], sql_ts(rq["ts"]), rq["animals"], rq["weight"]))
   return {"ev_variable": dbObj.getRow("SELECT * FROM ev_data_function(%s);", (ids[0], )),
           "rules": dbObj.getRow("SELECT animal_rules_function(%s);", (ids[1], ))[0][1]}
 
 
 def ev_adoption(dbObj, rq):
-  dbObj.execute("""INSERT INTO ev_foster
-                   VALUES(DEFAULT, (SELECT id FROM animals WHERE animal=%s), %s, 0, %s, %s);""",
-                (rq["mother"], sql_ts(rq["ts"]), rq["animals"], rq["weight"]))
-  ids = dbObj.getRow("""INSERT INTO ev_adoption
-                        VALUES(DEFAULT, (SELECT id FROM animals WHERE animal=%s), %s, 0, %s, %s)
-                        RETURNING id, animal_id;""",
-                     (rq["animal"], sql_ts(rq["ts"]), rq["animals"], rq["weight"]))
+  dbObj.execute("""
+    INSERT INTO ev_foster
+    VALUES(DEFAULT,
+           (SELECT id FROM animals WHERE animal=%s),
+           (SELECT race_id FROM animals WHERE animal=%s),
+           (SELECT id FROM workers WHERE worker=%s), %s, 0, %s, %s);""",
+    (rq["mother"], rq["mother"], rq["worker"], sql_ts(rq["ts"]), rq["animals"], rq["weight"]))
+  ids = dbObj.getRow("""
+    INSERT INTO ev_adoption
+    VALUES(DEFAULT,
+           (SELECT id FROM animals WHERE animal=%s),
+           (SELECT race_id FROM animals WHERE animal=%s),
+           (SELECT id FROM workers WHERE worker=%s), %s, 0, %s, %s)
+    RETURNING id, animal_id;""",
+    (rq["animal"], rq["animal"], rq["worker"], sql_ts(rq["ts"]), rq["animals"], rq["weight"]))
   return {"ev_variable": dbObj.getRow("SELECT * FROM ev_data_function(%s);", (ids[0], )),
           "rules": dbObj.getRow("SELECT animal_rules_function(%s);", (ids[1], ))[0][1]}
 
 
 def ev_partial_wean(dbObj, rq):
-  ids = dbObj.getRow("""INSERT INTO ev_partial_wean
-                        VALUES(DEFAULT, (SELECT id FROM animals WHERE animal=%s), %s, 0, %s, %s)
-                        RETURNING id, animal_id;""",
-                     (rq["animal"], sql_ts(rq["ts"]), rq["animals"], rq["weight"]))
+  ids = dbObj.getRow("""
+    INSERT INTO ev_partial_wean
+    VALUES(DEFAULT,
+           (SELECT id FROM animals WHERE animal=%s),
+           (SELECT race_id FROM animals WHERE animal=%s),
+           (SELECT id FROM workers WHERE worker=%s), %s, 0, %s, %s)
+    RETURNING id, animal_id;""",
+    (rq["animal"], rq["animal"], rq["worker"], sql_ts(rq["ts"]), rq["animals"], rq["weight"]))
   return {"ev_variable": dbObj.getRow("SELECT * FROM ev_data_function(%s);", (ids[0], )),
           "rules": dbObj.getRow("SELECT animal_rules_function(%s);", (ids[1], ))[0][1]}
 
 
 def ev_wean(dbObj, rq):
-  ids = dbObj.getRow("""INSERT INTO ev_wean
-                        VALUES(DEFAULT, (SELECT id FROM animals WHERE animal=%s), %s, 0, %s, %s)
-                        RETURNING id, animal_id;""",
-                     (rq["animal"], sql_ts(rq["ts"]), rq["animals"], rq["weight"]))
+  ids = dbObj.getRow("""
+    INSERT INTO ev_wean
+    VALUES(DEFAULT,
+           (SELECT id FROM animals WHERE animal=%s),
+           (SELECT race_id FROM animals WHERE animal=%s),
+           (SELECT id FROM workers WHERE worker=%s), %s, 0, %s, %s)
+    RETURNING id, animal_id;""",
+    (rq["animal"], rq["animal"], rq["worker"], sql_ts(rq["ts"]), rq["animals"], rq["weight"]))
   return {"ev_variable": dbObj.getRow("SELECT * FROM ev_data_function(%s);", (ids[0], )),
           "rules": dbObj.getRow("SELECT animal_rules_function(%s);", (ids[1], ))[0][1]}
 
 
 def ev_semen(dbObj, rq):
-  ids = dbObj.getRow("""INSERT INTO ev_semen
-                        VALUES(DEFAULT, (SELECT id FROM animals WHERE animal=%s),
-                               %s, 0, %s, %s, %s, %s)
-                        RETURNING id, animal_id;""",
-                     (rq["animal"], sql_ts(rq["ts"]), rq["volumen"], 
-                      rq["concentration"], rq["motility"], rq["dosis"]))
+  ids = dbObj.getRow("""
+    INSERT INTO ev_semen
+    VALUES(DEFAULT,
+           (SELECT id FROM animals WHERE animal=%s),
+           (SELECT race_id FROM animals WHERE animal=%s),
+           (SELECT id FROM workers WHERE worker=%s), %s, 0, %s, %s, %s, %s)
+    RETURNING id, animal_id;""",
+    (rq["animal"], rq["animal"], rq["worker"], sql_ts(rq["ts"]),
+     rq["volumen"], rq["concentration"], rq["motility"], rq["dosis"]))
   return {"ev_variable": dbObj.getRow("SELECT * FROM ev_data_function(%s);", (ids[0], )),
           "rules": dbObj.getRow("SELECT animal_rules_function(%s);", (ids[1], ))[0][1]}
 
 
 def ev_ubication(dbObj, rq):
-  ids = dbObj.getRow("""INSERT INTO ev_ubication
-                        VALUES(DEFAULT, (SELECT id FROM animals WHERE animal=%s), %s, 0, %s)
-                        RETURNING id, animal_id;""",
-                     (rq["animal"], sql_ts(rq["ts"]), rq["ubication"]))
+  ids = dbObj.getRow("""
+    INSERT INTO ev_ubication
+    VALUES(DEFAULT,
+           (SELECT id FROM animals WHERE animal=%s),
+           (SELECT race_id FROM animals WHERE animal=%s),
+           (SELECT id FROM workers WHERE worker=%s), %s, 0, %s)
+    RETURNING id, animal_id;""",
+    (rq["animal"], rq["animal"], rq["worker"], sql_ts(rq["ts"]), rq["ubication"]))
   return {"ev_variable": dbObj.getRow("SELECT * FROM ev_data_function(%s);", (ids[0], )),
           "rules": dbObj.getRow("SELECT animal_rules_function(%s);", (ids[1], ))[0][1]}
 
 
 def ev_feed(dbObj, rq):
-  ids = dbObj.getRow("""INSERT INTO ev_feed
-                        VALUES(DEFAULT, (SELECT id FROM animals WHERE animal=%s), %s, 0, %s)
-                        RETURNING id, animal_id;""",
-                     (rq["animal"], sql_ts(rq["ts"]), rq["weight"]))
+  ids = dbObj.getRow("""
+    INSERT INTO ev_feed
+    VALUES(DEFAULT,
+           (SELECT id FROM animals WHERE animal=%s),
+           (SELECT race_id FROM animals WHERE animal=%s),
+           (SELECT id FROM workers WHERE worker=%s), %s, 0, %s)
+    RETURNING id, animal_id;""",
+    (rq["animal"], rq["animal"], rq["worker"], sql_ts(rq["ts"]), rq["weight"]))
   return {"ev_variable": dbObj.getRow("SELECT * FROM ev_data_function(%s);", (ids[0], )),
           "rules": dbObj.getRow("SELECT animal_rules_function(%s);", (ids[1], ))[0][1]}
 
 
 def ev_condition(dbObj, rq):
-  ids = dbObj.getRow("""INSERT INTO ev_condition
-                        VALUES(DEFAULT, (SELECT id FROM animals WHERE animal=%s),
-                               %s, 0, %s, %s, %s)
-                        RETURNING id, animal_id;""",
-                     (rq["animal"], sql_ts(rq["ts"]), rq["condition"],
-                      rq["weight"], rq["backfat"]))
+  ids = dbObj.getRow("""
+    INSERT INTO ev_condition
+    VALUES(DEFAULT,
+           (SELECT id FROM animals WHERE animal=%s),
+           (SELECT race_id FROM animals WHERE animal=%s),
+           (SELECT id FROM workers WHERE worker=%s), %s, 0, %s, %s, %s)
+    RETURNING id, animal_id;""",
+    (rq["animal"], rq["animal"], rq["worker"], sql_ts(rq["ts"]),
+     rq["condition"], rq["weight"], rq["backfat"]))
   return {"ev_variable": dbObj.getRow("SELECT * FROM ev_data_function(%s);", (ids[0], )),
           "rules": dbObj.getRow("SELECT animal_rules_function(%s);", (ids[1], ))[0][1]}
 
 
 def ev_milk(dbObj, rq):
-  ids = dbObj.getRow("""INSERT INTO ev_milk
-                        VALUES(DEFAULT, (SELECT id FROM animals WHERE animal=%s), %s, 0, %s, %s)
-                        RETURNING id, animal_id;""",
-                     (rq["animal"], sql_ts(rq["ts"]), rq["weight"], rq["quality"]))
+  ids = dbObj.getRow("""
+    INSERT INTO ev_milk
+    VALUES(DEFAULT,
+           (SELECT id FROM animals WHERE animal=%s),
+           (SELECT race_id FROM animals WHERE animal=%s),
+           (SELECT id FROM workers WHERE worker=%s), %s, 0, %s, %s)
+    RETURNING id, animal_id;""",
+    (rq["animal"], rq["animal"], rq["worker"], sql_ts(rq["ts"]), rq["weight"], rq["quality"]))
   return {"ev_variable": dbObj.getRow("SELECT * FROM ev_data_function(%s);", (ids[0], )),
           "rules": dbObj.getRow("SELECT animal_rules_function(%s);", (ids[1], ))[0][1]}
 
 
 def ev_dry(dbObj, rq):
-  ids = dbObj.getRow("""INSERT INTO ev_dry
-                        VALUES(DEFAULT, (SELECT id FROM animals WHERE animal=%s), %s, 0)
-                        RETURNING id, animal_id;""",
-                     (rq["animal"], sql_ts(rq["ts"])))
+  ids = dbObj.getRow("""
+    INSERT INTO ev_dry
+    VALUES(DEFAULT,
+           (SELECT id FROM animals WHERE animal=%s),
+           (SELECT race_id FROM animals WHERE animal=%s),
+           (SELECT id FROM workers WHERE worker=%s), %s, 0)
+    RETURNING id, animal_id;""",
+    (rq["animal"], rq["animal"], rq["worker"], sql_ts(rq["ts"])))
   return {"ev_variable": dbObj.getRow("SELECT * FROM ev_data_function(%s);", (ids[0], )),
           "rules": dbObj.getRow("SELECT animal_rules_function(%s);", (ids[1], ))[0][1]}
 
 
 def ev_temperature(dbObj, rq):
-  ids = dbObj.getRow("""INSERT INTO ev_temperature
-                        VALUES(DEFAULT, (SELECT id FROM animals WHERE animal=%s), %s, 0, %s)
-                        RETURNING id, animal_id;""",
-                     (rq["animal"], sql_ts(rq["ts"]), rq["temperature"]))
+  ids = dbObj.getRow("""
+    INSERT INTO ev_temperature
+    VALUES(DEFAULT,
+           (SELECT id FROM animals WHERE animal=%s),
+           (SELECT race_id FROM animals WHERE animal=%s),
+           (SELECT id FROM workers WHERE worker=%s), %s, 0, %s)
+    RETURNING id, animal_id;""",
+    (rq["animal"], rq["animal"], rq["worker"], sql_ts(rq["ts"]), rq["temperature"]))
   return {"ev_variable": dbObj.getRow("SELECT * FROM ev_data_function(%s);", (ids[0], )),
           "rules": dbObj.getRow("SELECT animal_rules_function(%s);", (ids[1], ))[0][1]}
 
 
 ################################
+# TODO
+'''
 def sync_temperatures(dbObj, rq):
   ids, rows = [], loads(rq['temperatures'])
   for row in rows:  # id, eartag, ts, temperature
-    _id = dbObj.getRow("""INSERT INTO ev_temperature
-                          VALUES(%s, (SELECT id FROM animals_eartags WHERE eartag=%s), %s, 0, %s)
-                          RETURNING id;""", tuple(row))
+    _id = dbObj.getRow("""
+      INSERT INTO ev_temperature
+      VALUES(%s, (SELECT id FROM animals_eartags WHERE eartag=%s), %s, 0, %s)
+      RETURNING id;""", tuple(row))
     ids.append(_id[0])
   return ids
+'''
 ###############################
 
 
-def ev_treatment(dbObj, rq):
-  ids = dbObj.getRow("""INSERT INTO ev_treatment
-                        VALUES(DEFAULT, (SELECT id FROM animals WHERE animal=%s),
-                               %s, 0, %s, %s, %s, %s, %s)
-                        RETURNING id, animal_id;""",
-                     (rq["animal"], sql_ts(rq["ts"]), rq["treatment"],
-                      rq["dose"], rq["frecuency"], rq["days"], rq["route"]))
-  return {"ev_variable": dbObj.getRow("SELECT * FROM ev_data_function(%s);", (ids[0], )),
-          "rules": dbObj.getRow("SELECT animal_rules_function(%s);", (ids[1], ))[0][1]}
-
-
-def ev_palpation(dbObj, rq):
-  ids = dbObj.getRow("""INSERT INTO ev_palpation
-                        VALUES(DEFAULT, (SELECT id FROM animals WHERE animal=%s), %s, 0, %s)
-                        RETURNING id, animal_id;""",
-                     (rq["animal"], sql_ts(rq["ts"]), rq["palpation"]))
+def ev_disease(dbObj, rq):
+  ids = dbObj.getRow("""
+    INSERT INTO ev_disease
+    VALUES(DEFAULT,
+           (SELECT id FROM animals WHERE animal=%s),
+           (SELECT race_id FROM animals WHERE animal=%s),
+           (SELECT id FROM workers WHERE worker=%s), %s, 0, %s, %s)
+    RETURNING id, animal_id;""",
+    (rq["animal"], rq["animal"], rq["worker"], sql_ts(rq["ts"]),
+     rq["disease"], rq["treatment"]))
   return {"ev_variable": dbObj.getRow("SELECT * FROM ev_data_function(%s);", (ids[0], )),
           "rules": dbObj.getRow("SELECT animal_rules_function(%s);", (ids[1], ))[0][1]}
 
 
 def ev_note(dbObj, rq):
-  ids = dbObj.getRow("""INSERT INTO ev_note
-                        VALUES(DEFAULT, (SELECT id FROM animals WHERE animal=%s), %s, 0, %s)
-                        RETURNING id, animal_id;""",
-                     (rq["animal"], sql_ts(rq["ts"]), rq["note"]))
+  ids = dbObj.getRow("""
+    INSERT INTO ev_note
+    VALUES(DEFAULT,
+           (SELECT id FROM animals WHERE animal=%s),
+           (SELECT race_id FROM animals WHERE animal=%s),
+           (SELECT id FROM workers WHERE worker=%s), %s, 0, %s)
+    RETURNING id, animal_id;""",
+    (rq["animal"], rq["animal"], rq["worker"], sql_ts(rq["ts"]), rq["note"]))
   return {"ev_variable": dbObj.getRow("SELECT * FROM ev_data_function(%s);", (ids[0], )),
           "rules": dbObj.getRow("SELECT animal_rules_function(%s);", (ids[1], ))[0][1]}
 
 
 def ev_delete(dbObj, rq):
   dbObj.execute("DELETE FROM events WHERE id=%s;", (rq["id"], ))
-  return {"rules": dbObj.getRow("""SELECT animal_rules_function(
-                                     (SELECT id FROM animals WHERE animal=%s));""",
-                       (rq['animal'], ))[0][1]}
+  return {"rules": dbObj.getRow("""
+    SELECT animal_rules_function((SELECT id FROM animals WHERE animal=%s));""",
+    (rq['animal'], ))[0][1]}
 
 
 ####################### RESUMENS ########################
@@ -551,19 +643,6 @@ UNION ALL
           ["Total Machos / ingresos", "", "%s / %s" % (e['prev_entry_male'][1] + (e['ev_entry_male'][1]), e['ev_entry_male'][1])],
           ["Total Hembras / ingresos", e['prev_entry_female'][0], "%s / %s" % (e['prev_entry_female'][1] + (e['ev_entry_female'][1]), e['ev_entry_female'][1])],
           ["Salidas", e['ev_sale'][0], e['ev_sale'][1]]]
-
-
-def repro_resumen_males_usage(dbObj, rq):
-  return dbObj.getRows("""
-SELECT ts,
-       CASE WHEN EXISTS(SELECT id FROM ev_check_neg
-                        WHERE animal_id=s.animal_id AND parity=s.parity)
-       THEN 1 ELSE 0 END,
-       (SELECT animal FROM animals WHERE id=s.male_id)
-FROM ev_service s WHERE ts>=%s AND ts<=%s ORDER BY ts ASC;
-  """, (sql_ts(rq['d1']), sql_ts(rq['d2'])))
-
-
 
 
 ################################################################################
