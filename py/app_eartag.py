@@ -36,12 +36,12 @@ class dbObj:
     try:
       self.conn = connect(dbname)
       self.cur = self.conn.cursor()
-    except Exception, e:
+    except Exception as e:
       raise Exception("db conn error: " + str(e))
   def execute(self, sql, args=None):
     try:
       self.cur.execute(sql, args or ())
-    except Exception, e:
+    except Exception as e:
       self.conn.rollback()
       raise Exception("db exec error: " + str(e))
   def getRow(self, sql, args=None):
@@ -102,7 +102,7 @@ while True:
     if len(temperatures):
       insert_temperatures(db, temperatures)
       sync_temperatures(db)
-  except Exception, e:
+  except Exception as e:
     print str(e)
   finally:
     try:
@@ -130,7 +130,7 @@ while True:
 #  response.set_header('Access-Control-Allow-Origin', '*')
 #  try:
 #    rs = sync_temperatures(dbObj, request.forms)
-#  except Exception, e:
+#  except Exception as e:
 #    response.status = 500
 #    rs = "sync error -> " + str(e)
 #  return rs
