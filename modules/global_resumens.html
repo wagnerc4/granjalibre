@@ -8,14 +8,7 @@
         </button>
         <h3 class="modal-title">Subquery</h3>
       </div>
-      <div class="modal-body">
-        <table class="resumen table table-striped">
-          <caption></caption>
-          <thead></thead>
-          <tbody></tbody>
-          <tfoot></tfoot>
-        </table>
-      </div>
+      <div class="modal-body"></div>
       <div class="modal-footer">
         <button class="btn btn-info xls_subquery">xls</button>
         <button class="btn btn-info print_subquery">imprimir</button>
@@ -25,454 +18,165 @@
 </div>
 
 <script>
-function set_table_rows($table, tmp, set_raws) {
-  var defs=$table.data("defs"), foot=$table.data("foot"), defs_len=defs.length,
-      raws=[], rows=[], last=[[]], sums=[], mins=[], maxs=[];
-  for (var i=0; i<defs_len; ++i) {
-    sums.push(0);
-    mins.push(tmp[0][i]);
-    maxs.push(tmp[0][i]);
-  }
-  for (var k in tmp) {
-    var raw=[], row=[];
-    for (var i=0; i<defs_len; ++i) {
-      raw[i] = (set_raws && defs[i].value)?defs[i].value(tmp[k]):tmp[k][i];
-      if (defs[i].foot && ["sum", "avg", "min", "max"].indexOf(defs[i].foot) > -1) {
-        switch(defs[i].foot) {
-          case "sum":
-          case "avg": sums[i] = sums[i] + (raw[i] || 0); break;
-          case "min": mins[i] = (mins[i] > raw[i])?raw[i]:mins[i]; break;
-          case "max": maxs[i] = (maxs[i] > raw[i])?maxs[i]:raw[i]; break;
-        }
-      }
-      if (defs[i].class) {
-        if (defs[i].class != "no_format") {
-          row[i] = '<span class="'+defs[i].class+'">' +
-                   String(raw[i] || '').replace(/\,/g,
-                                                '</span>, <span class="'+defs[i].class+'">') +
-                   '</span>';
-        } else {
-          row[i] = raw[i];
-        }
-      } else {
-        if (typeof(raw[i]) == "number"){
-          row[i] = formatCurrency(raw[i], 2);  // decimals = Number.isInteger(raw[i])?0:2
-        } else if (typeof(raw[i]) == "string") {
-          row[i] = raw[i]?raw[i].replace(/\\\\/g, '<br />'):'';
-        } else {
-          row[i] = raw[i];
-        }
-      }
-      if (typeof(row[i])=="number" && row[i]<0) {
-        row[i] = '<span style="background:red;">' + row[i] + '</span>';
-      }
-    }
-    raws.push(raw);
-    rows.push(row);
-  }
-  for (var i=0; i<defs_len; ++i) {
-    last[0][i] = "";
-    if (defs[i].foot) {
-      switch(defs[i].foot) {
-        case "sum": last[0][i] = formatCurrency(sums[i], 2); break;
-        case "avg": last[0][i] = formatCurrency(sums[i] / raws.length, 2); break;
-        case "min": last[0][i] = formatCurrency(mins[i], 2) || mins[i]; break;
-        case "max": last[0][i] = formatCurrency(maxs[i], 2) || maxs[i]; break;
-        case "count": last[0][i] = formatCurrency(raws.length, 0); break;
-        default: last[0][i] = defs[i].foot;
-      }
-    }
-  }
-  for (var i in foot) {
-    var row=[];
-    for (var j in foot[i]) {
-      row[j] = foot[i][j] instanceof Object?formatCurrency(foot[i][j](raws), 2):foot[i][j];
-    }
-    last.push(row);
-  }
-  if (set_raws) {
-    $table.data("raws", raws);
-  }
-  $table.data("rows", rows);
-  $table.data("last", last);
-}
-
-function set_table_head($table) {
-  var defs=$table.data("defs"), defs_len=defs.length, head=[], filters=[];
-  for (var i=0; i<defs_len; ++i) {
-    head.push(defs[i].head);
-    filters.push('<input type="text" size="5" />');
-  }
-  $table.find("thead").html('<tr><th>' + head.join('</th><th>') + '</th></tr>');
-  $table.find("thead").append('<tr><th>' + filters.join('</th><th>') + '</th></tr>');
+///////////// GLOBAL RESUMENS /////////////
+function set_crosstable(rs) {
+  var $table = $('<table class="table table-striped resumen">' +
+                 '  <caption></caption>' +
+                 '  <thead></thead>' +
+                 '  <tbody></tbody>' +
+                 '  <tfoot></tfoot>' +
+                 '</table>');
+  $table.find("thead").html('<tr><th>' + rs["head"].join('</th><th>') + '</th></tr>');
   $table.stickyTableHeaders("destroy");
   $table.stickyTableHeaders({fixedOffset: $("nav.navbar").height()});
+  $table.find("tbody").html($.map(rs["body"], function(row){
+    return '<tr><td>' + row.join('</td><td>') + '</td></tr>';
+  }).join(""));
+  //$table.find("tfoot").html('<tr><th>' + rs["foot"][0].join('</th><th>') + '</th></tr>');
+  return $table;
 }
 
-// TABLE
-function set_table_body($table, tmp, set_raws, paginate) {
-  if (!paginate && !tmp.length) {
-    alert("sin resultados!");
-    $table.find("tbody").empty();
-  } else {
-    if (!paginate) {
-      set_table_rows($table, tmp, set_raws);
-      if (set_raws) {
-        $table.data("rows_selected", {});
-        $table.find("thead tr:first th").removeClass("success warning");
-      }
-    }
-    var rows = $table.data("rows"),
-        last = $table.data("last"),
-        begin = 0, end = rows.length,
-        $ul = $table.find("caption ul.pagination"),
-        keys_selected = Object.keys($table.data("rows_selected") || {});
-    if ($ul.length) {
-      var count = rows.length,
-          lines = parseInt($table.find("select[name='lines']").val(), 10) || count,
-          pages = Math.ceil(count / lines),
-          page = Math.min($ul.pagination("getCurrentPage"), pages);
-      begin = Math.max(page - 1, 0) * lines;
-      end = begin + lines;
-      $ul.pagination("updateItems", count);
-      if ($ul.pagination("getPagesCount") != pages) {
-        $ul.pagination("updateItemsOnPage", lines);
-        $ul.pagination("selectPage", page);
-      }
-    }
-    $table.find("tbody").html($.map(rows.slice(begin, end), function(row){
-      var i = keys_selected.indexOf(stripHtml(String(row[0])));
-      return '<tr'+ ((i > -1)?' class="danger"':'') +'><td>'+ row.join('</td><td>') +'</td></tr>';
-    }).join(""));
-    if (rows.length <= end) {
-      $table.find("tfoot").html($.map(last, function(row){
-        return '<tr><th>' + row.join('</th><th>') + '</th></tr>';
-      }).join(""));
-    } else {
-      $table.find("tfoot").empty();
-    }
-  }
+function set_pivot(rs) {
+  return rs['table'];
 }
 
-function set_table($table, rs) {
-  var $caption = $table.find("caption"),
-      defs=rs["defs"] instanceof Array?rs["defs"]:JSONfn.parse(rs["defs"]),
-      foot=defs[defs.length - 1] instanceof Array?defs.pop():[];
-  if (!defs.length) { defs = $.map(rs["cols"], function(c){ return {"head":c}; }); }
-  if (rs["buttons"] && $caption.find("div.buttons").length < 1) {
-    $caption.append('<div class="buttons">' +
-                    '  <h2 style="display:inline;">Resultados</h2>' +
-                    '  <input type="text" name="desde" class="date" placeholder="desde . . ." />'+
-                    '  <input type="text" name="hasta" class="date" placeholder="hasta . . ." />'+
-                    '  <input type="text" name="valor" placeholder="valor . . ." />' +
-                    '  <select name="moneda"><option>moneda</option><option>crc</option><option>usd</option></select>' +
-                    '  <button class="btn btn-info" name="ver">ver</button>' +
-                    '  <button class="btn btn-info" name="xls">xls</button>' +
-                    '  <button class="btn btn-info" name="graph">grafico</button>' +
-                    '  <!--button class="btn btn-info" name="print">imprimir</button-->' +
-                    '</div>');
-  }
-  if ($caption.find("div.paginate").length < 1) {
-    $caption.append('<div class="btn-group paginate" role="group" aria-label="...">' +
-                    '  <div class="btn-group" role="group">' +
-                    '    <p class="form-control-static"><strong>Lineas</strong></p>' +
-                    '  </div>' +
-                    '  <div class="btn-group" role="group">' +
-                    '    <select class="form-control" name="lines">' +
-                    '      <option'+(rs["all_lines"]?"":" selected")+'>10</option>' +
-                    '      <option>30</option>' +
-                    '      <option>90</option>' +
-                    '      <option>270</option>' +
-                    '      <option value="all"'+(rs["all_lines"]?" selected":"")+'>todo</option>'+
-                    '    </select>' +
-                    '  </div>' +
-                    '  <div class="btn-group" role="group">' +
-                    '    <ul class="pagination" style="margin:0;"></ul>' +
-                    '  </div>' +
-                    (rs["buttons"]?'':
-                    '  <div class="btn-group" role="group">' +
-                    '    <button class="btn btn-info" name="xls">xls</button>' +
-                    '  </div>') +
-                    '</div>');
-    $caption.find("select[name='lines']").change(function(){
-      set_table_body($table, [], false, true);
-    });
-    $caption.find("ul.pagination").pagination({
-      displayedPages: 3, edges: 1, prevText: "", nextText: "",
-      onPageClick: function(p, e){ if (e) set_table_body($table, [], false, true); }
-    });
-  }
-  $table.data("defs", defs);
-  $table.data("foot", foot);
-  set_table_head($table);
+function set_graph(rs) {
+  return '<embed type="image/svg+xml" src='+ rs["graph"] +' />';
 }
 
-// TABLE AJAX
-function set_table_ajax_body($table) {
-  var pd = new FormData(),
-      $ul = $table.find("caption ul.pagination");
-      lines = parseInt($table.find("select[name='lines']").val(), 10),
-      page = $ul.pagination("getCurrentPage"),
-      filter=$table.data("filter")?JSONfn.parse($table.data("filter")):{};
-  for (var k in filter) {
-    var $input = $table.find("thead input:eq(" + k + ")");
-    if ($input.val() != filter[k]) $input.val(filter[k]);
-  }
-  pd.append("action", "select_" + $table.attr("id"));
-  pd.append("sort_col", $table.data("sort_col"));
-  pd.append("sort_dir", $table.data("sort_dir"));
-  pd.append("filter", $table.data("filter"));
-  pd.append("lines", lines);
-  pd.append("page", page);
-  request(db_url, pd, function(rs){
-    if (!rs["rows"].length){
-      alert("sin resultados!");
-      $table.find("tbody").empty();
-    } else {
-      $ul.pagination("updateItems", rs["count"]);
-      if ($ul.pagination("getPagesCount") != Math.ceil(rs["count"] / lines)) {
-        $ul.pagination("updateItemsOnPage", lines);
-        $ul.pagination("selectPage", page);
-      }
-      set_table_rows($table, rs["rows"], true);
-      $table.find("tbody").html($.map($table.data("rows"), function(row){
-        return '<tr><td>' + row.join('</td><td>') + '</td></tr>';
-      }).join(""));
-    }
-  });
+function set_resumen(rs) {
+  var $table = $('<table class="table table-striped resumen">' +
+                 '  <tbody></tbody>' +
+                 '</table>');
+  $table.find("tbody").html($.map(rs, function(row){
+    return '<tr><td>' + row.join('</td><td>') + '</td></tr>';
+  }).join(""));
+  return $table;
 }
 
-function set_table_ajax($table, data) {
-  var $caption = $table.find("caption");
-  $caption.append('<div class="btn-group paginate" role="group" aria-label="...">' +
-                  '  <div class="btn-group" role="group">' +
-                  '    <p class="form-control-static"><strong>Lineas</strong></p>' +
-                  '  </div>' +
-                  '  <div class="btn-group" role="group">' +
-                  '    <select class="form-control" name="lines">' +
-                  '      <option>10</option>' +
-                  '      <option>50</option>' +
-                  '      <option>150</option>' +
-                  '      <option>450</option>' +
-                  '      <option value="all">todo</option>' +
-                  '    </select>' +
-                  '  </div>' +
-                  '  <div class="btn-group" role="group">' +
-                  '    <ul class="pagination" style="margin:0;"></ul>' +
-                  '  </div>' +
-//                  '  <div class="btn-group" role="group">' +
-//                  '    <button class="btn btn-info" name="xls">xls</button>' +
-//                  '  </div>' +
-                  '</div>');
-  $caption.find("select[name='lines']").change(function(){ set_table_ajax_body($table); });
-  $caption.find("ul.pagination").pagination({
-    displayedPages: 3, edges: 1, prevText: "", nextText: "",
-    onPageClick: function(p, e){ if (e) set_table_ajax_body($table); }
-  });
-  $table.data("defs", data["defs"]);
-  $table.data("filter", JSONfn.stringify(data["filter"]));
-  $table.data("sort_col", data["sort_col"]);
-  $table.data("sort_dir", data["sort_dir"]);
-  set_table_head($table);
-  $table.find("thead tr:first th:eq(" + data["sort_col"] + ")")
-        .addClass((data["sort_dir"].toLowerCase()=="asc")?"success":"warning");
-}
-
-
-/////////////////////// TABLE.RESUMEN ACTIONS ///////////////////////
-// SORT ARRAY
-//var dp = /^(\d{2})[\/\- ](\d{2})[\/\- ](\d{4})/;
-//a.match(dp) -> a.replace(dp,'$3$2$1')
-//b.match(dp) -> b.replace(dp,'$3$2$1')
-function cp(a,b){
-  var c=a.match(/^\d{4}\-\d{2}\-\d{2}/)?a:parseFloat(a.replace(/\$|\,/g,'')) || a.toLowerCase(),
-      d=b.match(/^\d{4}\-\d{2}\-\d{2}/)?b:parseFloat(b.replace(/\$|\,/g,'')) || b.toLowerCase();
-  return (c>d)?1:(c<d)?-1:0;
-}
-
-$(function() {
-  // SORT TABLE
-  $("table.resumen > thead").on("click", "tr:first > th", function() {
-    var $table = $(this).parents("table"),
-        raws = $table.data("raws");
-    if($(this).hasClass("success") || $(this).hasClass("warning")) {
-      raws.reverse();
-      $(this).toggleClass("success warning");
-    } else {
-      var index = $(this).index();
-      raws.sort(function(a,b) { return cp(String(a[index]), String(b[index])); });
-      $table.find("thead tr:first th").removeClass("success warning");
-      $(this).addClass("success");
-    }
-    $table.data("raws", raws);
-/*
-    $.map($table.find("thead input"), function(item, index){
-      var value = $(item).val().toLowerCase();
-      if (value) {
-        raws = $.grep(raws, function(n, i) {
-          return String(n[index]).toLowerCase().indexOf(value) > -1;
-        });
-      }
-    });
-    set_table_body($table, raws, false, false);
-*/
-    var rows = raws.slice(0);
-    $.map($table.find("thead input"), function(item, index){
-      var i=0, value=$(item).val().toLowerCase();
-      if (value) {
-        while (i < rows.length) {
-          if (stripHtml(String(rows[i][index])).toLowerCase().indexOf(value) > -1) i++;
-          else rows.splice(i, 1);
+function set_content($div, rs) {
+  var $table = null, width = 0;
+  for (var k in rs["content"]) {
+    var data = rs["content"][k]["data"];
+    switch(rs["content"][k]["type"]) {
+      case "table":
+      //case "crosstable":
+        data["all_lines"] = $div.data("all_lines");
+        $div.append(set_table(data));
+        width = 0;
+      break;
+      case "crosstable":
+        $div.append(set_crosstable(data));
+        width = 0;
+      break;
+      case "pivot":
+        if (width == 0) {
+          $table = $('<table><tr></tr></table>');
+          $div.append($table);
         }
-      }
-    });
-    set_table_body($table, rows, false, false);
-  });
-
-  // FILTER TABLE
-  $("table.resumen > thead").on("keyup", "tr:last > th > input", function() {
-    var $table = $(this).parents("table"),
-        rows = $table.data("raws").slice(0);
-    $.map($table.find("thead input"), function(item, index){
-      var i=0, value=$(item).val().toLowerCase();
-      if (value) {
-        while (i < rows.length) {
-          if (stripHtml(String(rows[i][index])).toLowerCase().indexOf(value) > -1) i++;
-          else rows.splice(i, 1);
+        $table.find("tr:eq(0)").append('<td>' + set_pivot(data) + '</td>');
+        width = ((width + data["width"]) > 400)?0:(width + data["width"]);
+      break;
+      case "graph":
+        if (width == 0) {
+          $table = $('<table><tr></tr></table>');
+          $div.append($table);
         }
-      }
-    });
-    set_table_body($table, rows, false, false);
-  });
-
-  // SELECT TABLE
-  $("table.resumen tbody").on("click", "tr", function() {
-    $(this).toggleClass("danger");
-    var $table = $(this).parents("table"),
-        rows = $table.data("rows_selected"),
-        row = $.map($(this).find("td"), function(td){
-                var input = $(td).find("input");
-                return input.length?input.val():$(td).text();
-              });
-    if ($(this).hasClass("danger")) rows[row[0]] = row;
-    else delete rows[row[0]];
-    $table.data("rows_selected", rows);
-  });
-
-///////////////////////////////////////////////////////////////////////////////
-  // SORT TABLE AJAX
-  $("table.resumen_ajax > thead").on("click", "tr:first > th", function() {
-    var $table = $(this).parents("table"),
-        direction = "";
-    if($(this).hasClass("success") || $(this).hasClass("warning")) {
-      $(this).toggleClass("success warning");
-      direction = $(this).hasClass("success")?"ASC":"DESC";
-    } else {
-      $table.find("thead tr:first th").removeClass("success warning");
-      $(this).addClass("success");
-      direction = "ASC";
+        $table.find("tr:eq(0)").append('<td>' + set_graph(data) + '</td>');
+        width = ((width + data["width"]) > 400)?0:(width + data["width"]);
+      break;
+      case "resumen":
+        $div.append(set_resumen(data));
+        width = 0;
+      break;
     }
-    $table.data("sort_col", $(this).index());
-    $table.data("sort_dir", direction);
-    set_table_ajax_body($table);
-  });
+  }
+}
 
-  // FILTER TABLE AJAX
-  var resumen_timer=null;
-  $("table.resumen_ajax > thead").on("keyup", "tr:last > th > input", function() {
-    var $table = $(this).parents("table"),
-        filter = {};
-    window.clearTimeout(resumen_timer);
-    resumen_timer = window.setTimeout(function() {
-      $.map($table.find("thead input"), function(item, index){
-        var value=$(item).val();
-        if (value) filter[index] = value;
-      });
-      $table.data("filter", JSONfn.stringify(filter));
-      set_table_ajax_body($table);
-    }, 800);
-  });
+function set_buttons($buttons, rs) {
+  $buttons.html('<h2 style="display:inline;">' + rs['title'] + '</h2>' +
+                '<input type="text" name="desde" class="date" placeholder="desde . . ." />'+
+                '<input type="text" name="hasta" class="date" placeholder="hasta . . ." />'+
+                '<input type="text" name="valor" placeholder="valor . . ." size="5" />' +
+                '<select name="grupo1">' +
+                '<option>year</option><option>month</option><option>week</option>' +
+                '<option>worker</option><option>parity</option><option>race</option>' +
+                '</select>' +
+                '<select name="grupo2">' +
+                '<option></option>' +
+                '<option>year</option><option>month</option><option>week</option>' +
+                '<option>worker</option><option>parity</option><option>race</option>' +
+                '<option>animal</option>' +
+                '</select>' +
+                '<select name="moneda">' +
+                '<option>moneda</option><option>crc</option><option>usd</option>' +
+                '</select>' +
+                '<button class="btn btn-info" name="ver">ver</button>');
+  if (!rs["d1"]) $buttons.find("input[name='desde']").hide();
+  if (!rs["d2"]) $buttons.find("input[name='hasta']").hide();
+  if (!rs["g1"]) $buttons.find("select[name='grupo1']").hide();
+  if (!rs["g2"]) $buttons.find("select[name='grupo2']").hide();
+  if (!rs["v"]) $buttons.find("input[name='valor']").hide();
+  if (!rs["c"]) $buttons.find("select[name='moneda']").hide();
+}
 
-  // SELECT TABLE AJAX
-  $("table.resumen_ajax tbody").on("click", "tr", function() {
-    $(this).toggleClass("danger");
-  });
-///////////////////////////////////////////////////////////////////////////////
-
-/*
-  var ids = $.map($("#table tbody tr.danger"), function(tr){
-              return $(tr).find("td:first").text();
-            });
-  var rows = $.map($("#table tbody tr.danger"), function(tr){
-               return [$.map($(tr).find("td"), function(td){ return $(td).text(); })];
-             });
-*/
-
-  // EXECUTE
-  $("table.resumen:not(#querys_table) caption button[name='ver']").click(function(){
+function set_buttons_click($buttons) {
+  $buttons.find("button[name='ver']").click(function(){
     var pd = new FormData(),
-        $table = $(this).parents("table");
+        $div = $buttons.parent();
     pd.append("action", "select_query_saved");
-    pd.append("code", $table.data("code"));
-    pd.append("d1", $table.find("caption input[name='desde']").val());
-    pd.append("d2", $table.find("caption input[name='hasta']").val());
-    pd.append("v", $table.find("caption input[name='valor']").val());
-    pd.append("c", $table.find("caption select[name='moneda']").val());
-//    var data = $table.data();
-//    for (var k in data) { if (k != "rows") pd.append(k, data[k]); }
+    pd.append("code", $div.attr("id"));
+    pd.append("d1", $buttons.find("input[name='desde']").val());
+    pd.append("d2", $buttons.find("input[name='hasta']").val());
+    pd.append("g1", $buttons.find("select[name='grupo1']").val());
+    pd.append("g2", $buttons.find("select[name='grupo2']").val());
+    pd.append("v", $buttons.find("input[name='valor']").val());
+    pd.append("c", $buttons.find("select[name='moneda']").val());
     request(db_url, pd, function(rs){
-      set_table_body($table, rs["rows"], true, false);
+      $div.children().not($buttons).remove();
+      set_content($div, rs);
     });
   });
+}
 
 
-  // SUBQUERY
-  $("table.resumen tbody, table.resumen_ajax tbody").on("click", "span.subquery", function() {
+/////////////////////////// TABLE SUBQUERY ///////////////////////////
+$(function() {
+  $("div.tab-pane").on("click", "span.subquery", function() {
     var pd = new FormData(),
-        $table = $(this).parents("table"),
         subquery = $(this).text(),
-        moneda = $table.find("caption select[name='moneda']").val();
+        $tab = $(this).parents("div.tab-pane")
+        moneda = $tab.find("div.buttons select[name='moneda']").val();
     pd.append("action", "select_query_saved");
-    pd.append("code", $table.data("code")+"_subquery");
-    pd.append("d1", $table.find("caption input[name='desde']").val());
-    pd.append("d2", $table.find("caption input[name='hasta']").val());
-    pd.append("v", $table.find("caption input[name='valor']").val());
+    pd.append("code", $tab.attr("id")+"_subquery");
+    pd.append("d1", $tab.find("div.buttons input[name='desde']").val());
+    pd.append("d2", $tab.find("div.buttons input[name='hasta']").val());
+    pd.append("g1", $tab.find("select[name='grupo1']").val());
+    pd.append("g2", $tab.find("select[name='grupo2']").val());
+    pd.append("v", $tab.find("div.buttons input[name='valor']").val());
     pd.append("c", moneda);
-    pd.append("subquery", subquery);
+    pd.append("subquery", subquery.escape());
     request(db_url, pd, function(rs){
       var $modal = $("#subquery_modal"),
-          $table = $modal.find("div.modal-body table");
-      rs["all_lines"] = false;
-      set_table($table, rs);
-      set_table_body($table, rs["rows"], true, false);
-      $modal.find("div.modal-header h3").html(rs["title"] + ": "+ rs["subquery"] +
+          $div = $modal.find("div.modal-body");
+      $modal.find("div.modal-header h3").html(rs["title"] + ": "+ subquery +
                                               (moneda?" - "+moneda:""));
+      $div.data("all_lines", false);
+      $div.empty();
+      set_content($div, rs);
       $modal.modal("show");
     });
   });
 
   // XLS
-// TODO xls in tabs
-  $("table.resumen caption").on("click", "button[name='xls']", function() {
-    var $table = $(this).parents("table");
-    exportXLS($.map($table.find("thead tr:first th"), function(n){ return $(n).text(); }),
-              $table.data("raws").concat($table.data("last")));
-  });
-
   $("div.modal div.modal-footer button.xls_subquery").click(function(){
     var $modal = $(this).parents("div.modal"),
         $table = $modal.find("div.modal-body table");
     exportXLS($.map($table.find("thead tr:first th"), function(n){ return $(n).text(); }),
-              $table.data("raws").concat($table.data("last")));
+              $table.data("body").concat($table.data("last")));
   });
 
   // PRINT
-/*
-  $("table.resumen caption button[name='print']").click(function(){
-    var $table = $(this).parents("table");
-    newTab({"title":"", "content":'<table class="resumen">'+$table.html()+'</table>'});
-  });
-*/
   $("div.modal div.modal-footer button.print_subquery").click(function(){
     var $modal = $(this).parents("div.modal"),
         $table = $modal.find("div.modal-body table").clone();
@@ -480,6 +184,5 @@ $(function() {
     newTab({"title":"<h2>"+$modal.find("div.modal-header h3").html()+"</h2>",
             "content":'<table class="table table-striped">'+$table.html()+'</table>'});
   });
-
 });
 </script>
