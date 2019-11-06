@@ -70,10 +70,14 @@ CREATE TABLE animals_eartags (
 CREATE TABLE events (
   id SERIAL PRIMARY KEY NOT NULL,
   animal_id INTEGER NOT NULL,
+  race_id INTEGER NOT NULL,
+  worker_id INTEGER NOT NULL,
   ts INTEGER NOT NULL,
   parity INTEGER NOT NULL,
   CHECK (parity >= 0),
-  FOREIGN KEY(animal_id) REFERENCES animals(id)
+  FOREIGN KEY(animal_id) REFERENCES animals(id),
+  FOREIGN KEY(race_id) REFERENCES races(id),
+  FOREIGN KEY(worker_id) REFERENCES workers(id)
 );
 
 CREATE UNIQUE INDEX events_idx ON events (
@@ -87,7 +91,9 @@ CREATE UNIQUE INDEX events_idx ON events (
 -- ****************
 CREATE TABLE ev_entry_female (
   PRIMARY KEY (id),
-  FOREIGN KEY(animal_id) REFERENCES animals(id)
+  FOREIGN KEY(animal_id) REFERENCES animals(id),
+  FOREIGN KEY(race_id) REFERENCES races(id),
+  FOREIGN KEY(worker_id) REFERENCES workers(id)
 ) INHERITS (events);
 
 CREATE UNIQUE INDEX ev_entry_female_idx ON ev_entry_female (
@@ -101,7 +107,9 @@ CREATE UNIQUE INDEX ev_entry_female_idx ON ev_entry_female (
 -- ****************
 CREATE TABLE ev_entry_male (
   PRIMARY KEY (id),
-  FOREIGN KEY(animal_id) REFERENCES animals(id)
+  FOREIGN KEY(animal_id) REFERENCES animals(id),
+  FOREIGN KEY(race_id) REFERENCES races(id),
+  FOREIGN KEY(worker_id) REFERENCES workers(id)
 ) INHERITS (events);
 
 CREATE UNIQUE INDEX ev_entry_male_idx ON ev_entry_male (
@@ -115,7 +123,9 @@ CREATE UNIQUE INDEX ev_entry_male_idx ON ev_entry_male (
 -- ****************
 CREATE TABLE ev_entry_semen (
   PRIMARY KEY (id),
-  FOREIGN KEY(animal_id) REFERENCES animals(id)
+  FOREIGN KEY(animal_id) REFERENCES animals(id),
+  FOREIGN KEY(race_id) REFERENCES races(id),
+  FOREIGN KEY(worker_id) REFERENCES workers(id)
 ) INHERITS (events);
 
 CREATE UNIQUE INDEX ev_entry_semen_idx ON ev_entry_semen (
@@ -129,7 +139,9 @@ CREATE UNIQUE INDEX ev_entry_semen_idx ON ev_entry_semen (
 -- ****************
 CREATE TABLE ev_sale_semen (
   PRIMARY KEY (id),
-  FOREIGN KEY(animal_id) REFERENCES animals(id)
+  FOREIGN KEY(animal_id) REFERENCES animals(id),
+  FOREIGN KEY(race_id) REFERENCES races(id),
+  FOREIGN KEY(worker_id) REFERENCES workers(id)
 ) INHERITS (events);
 
 CREATE UNIQUE INDEX ev_sale_semen_idx ON ev_sale_semen (
@@ -146,6 +158,8 @@ CREATE TABLE ev_sale (
   -- destination INTEGER NULL,
   PRIMARY KEY (id),
   FOREIGN KEY(animal_id) REFERENCES animals(id),
+  FOREIGN KEY(race_id) REFERENCES races(id),
+  FOREIGN KEY(worker_id) REFERENCES workers(id),
   FOREIGN KEY(death_id) REFERENCES deaths(id)
 ) INHERITS (events);
 
@@ -163,7 +177,9 @@ CREATE TABLE ev_heat (
   lordosis SMALLINT NOT NULL,
   CHECK (lordosis IN (1, 2, 3, 4, 5)),
   PRIMARY KEY (id),
-  FOREIGN KEY(animal_id) REFERENCES animals(id)
+  FOREIGN KEY(animal_id) REFERENCES animals(id),
+  FOREIGN KEY(race_id) REFERENCES races(id),
+  FOREIGN KEY(worker_id) REFERENCES workers(id)
 ) INHERITS (events);
 
 CREATE UNIQUE INDEX ev_heat_idx ON ev_heat (
@@ -180,11 +196,14 @@ CREATE TABLE ev_service (
   matings SMALLINT NOT NULL,
   lordosis SMALLINT NOT NULL,
   quality SMALLINT NOT NULL,
+  repeat BOOLEAN NOT NULL,
   CHECK (matings > 0 AND matings < 10),
   CHECK (lordosis IN (1, 2, 3, 4, 5)),
   CHECK (quality IN (1, 2, 3, 4, 5)),
   PRIMARY KEY (id),
   FOREIGN KEY(animal_id) REFERENCES animals(id),
+  FOREIGN KEY(race_id) REFERENCES races(id),
+  FOREIGN KEY(worker_id) REFERENCES workers(id),
   FOREIGN KEY(male_id) REFERENCES animals(id)
 ) INHERITS (events);
 
@@ -199,9 +218,13 @@ CREATE UNIQUE INDEX ev_service_idx ON ev_service (
 -- ****************
 CREATE TABLE ev_check_pos (
   test CHAR(2) NOT NULL,
+  note VARCHAR(100) DEFAULT NULL,
   CHECK (test IN ('us', 'px', 'vs')),
+  CHECK (TRIM(note) <> '' AND note !~* '[^a-z0-9 :.,/()#-]+'),
   PRIMARY KEY (id),
-  FOREIGN KEY(animal_id) REFERENCES animals(id)
+  FOREIGN KEY(animal_id) REFERENCES animals(id),
+  FOREIGN KEY(race_id) REFERENCES races(id),
+  FOREIGN KEY(worker_id) REFERENCES workers(id)
 ) INHERITS (events);
 
 CREATE UNIQUE INDEX ev_check_pos_idx ON ev_check_pos (
@@ -215,9 +238,13 @@ CREATE UNIQUE INDEX ev_check_pos_idx ON ev_check_pos (
 -- ****************
 CREATE TABLE ev_check_neg (
   test CHAR(2) NOT NULL,
-  CHECK (test IN ('us', 'px', 'vs', 're')),
+  note VARCHAR(100) DEFAULT NULL,
+  CHECK (test IN ('us', 'px', 'vs', 'ht')),
+  CHECK (TRIM(note) <> '' AND note !~* '[^a-z0-9 :.,/()#-]+'),
   PRIMARY KEY (id),
-  FOREIGN KEY(animal_id) REFERENCES animals(id)
+  FOREIGN KEY(animal_id) REFERENCES animals(id),
+  FOREIGN KEY(race_id) REFERENCES races(id),
+  FOREIGN KEY(worker_id) REFERENCES workers(id)
 ) INHERITS (events);
 
 CREATE UNIQUE INDEX ev_check_neg_idx ON ev_check_neg (
@@ -230,10 +257,11 @@ CREATE UNIQUE INDEX ev_check_neg_idx ON ev_check_neg (
 -- ev_abortion
 -- ****************
 CREATE TABLE ev_abortion (
-  inducted SMALLINT NOT NULL,
-  CHECK (inducted IN(0, 1)),
+  inducted BOOLEAN NOT NULL,
   PRIMARY KEY (id),
-  FOREIGN KEY(animal_id) REFERENCES animals(id)
+  FOREIGN KEY(animal_id) REFERENCES animals(id),
+  FOREIGN KEY(race_id) REFERENCES races(id),
+  FOREIGN KEY(worker_id) REFERENCES workers(id)
 ) INHERITS (events);
 
 CREATE UNIQUE INDEX ev_abortion_idx ON ev_abortion (
@@ -254,10 +282,10 @@ CREATE TABLE ev_farrow (
   mummies INTEGER NOT NULL,
   hernias INTEGER NOT NULL,
   cryptorchids INTEGER NOT NULL,
-  dystocia SMALLINT NOT NULL,
-  retention SMALLINT NOT NULL,
-  inducted SMALLINT NOT NULL,
-  asisted SMALLINT NOT NULL,
+  dystocia BOOLEAN NOT NULL,
+  retention BOOLEAN NOT NULL,
+  inducted BOOLEAN NOT NULL,
+  asisted BOOLEAN NOT NULL,
   CHECK (litter ~* '^\d+[a-z]$'),
   CHECK (males >= 0),
   CHECK (females >= 0),
@@ -267,12 +295,10 @@ CREATE TABLE ev_farrow (
   CHECK (mummies >= 0),
   CHECK (hernias >= 0),
   CHECK (cryptorchids >= 0),
-  CHECK (dystocia IN(0, 1)),
-  CHECK (retention IN(0, 1)),
-  CHECK (inducted IN(0, 1)),
-  CHECK (asisted IN(0, 1)),
   PRIMARY KEY (id),
-  FOREIGN KEY(animal_id) REFERENCES animals(id)
+  FOREIGN KEY(animal_id) REFERENCES animals(id),
+  FOREIGN KEY(race_id) REFERENCES races(id),
+  FOREIGN KEY(worker_id) REFERENCES workers(id)
 ) INHERITS (events);
 
 CREATE UNIQUE INDEX ev_farrow_idx ON ev_farrow (
@@ -295,6 +321,8 @@ CREATE TABLE ev_death (
   CHECK (animals > 0),
   PRIMARY KEY (id),
   FOREIGN KEY(animal_id) REFERENCES animals(id),
+  FOREIGN KEY(race_id) REFERENCES races(id),
+  FOREIGN KEY(worker_id) REFERENCES workers(id),
   FOREIGN KEY(death_id) REFERENCES deaths(id)
 ) INHERITS (events);
 
@@ -319,7 +347,9 @@ CREATE TABLE ev_foster (
   CHECK (animals > 0),
   CHECK (weight >= 0),
   PRIMARY KEY (id),
-  FOREIGN KEY(animal_id) REFERENCES animals(id)
+  FOREIGN KEY(animal_id) REFERENCES animals(id),
+  FOREIGN KEY(race_id) REFERENCES races(id),
+  FOREIGN KEY(worker_id) REFERENCES workers(id)
 ) INHERITS (events);
 
 CREATE UNIQUE INDEX ev_foster_idx ON ev_foster (
@@ -337,7 +367,9 @@ CREATE TABLE ev_adoption (
   CHECK (animals > 0),
   CHECK (weight >= 0),
   PRIMARY KEY (id),
-  FOREIGN KEY(animal_id) REFERENCES animals(id)
+  FOREIGN KEY(animal_id) REFERENCES animals(id),
+  FOREIGN KEY(race_id) REFERENCES races(id),
+  FOREIGN KEY(worker_id) REFERENCES workers(id)
 ) INHERITS (events);
 
 CREATE UNIQUE INDEX ev_adoption_idx ON ev_adoption (
@@ -355,7 +387,9 @@ CREATE TABLE ev_wean (
   CHECK (animals >= 0),
   CHECK (weight >= 0),
   PRIMARY KEY (id),
-  FOREIGN KEY(animal_id) REFERENCES animals(id)
+  FOREIGN KEY(animal_id) REFERENCES animals(id),
+  FOREIGN KEY(race_id) REFERENCES races(id),
+  FOREIGN KEY(worker_id) REFERENCES workers(id)
 ) INHERITS (events);
 
 CREATE UNIQUE INDEX ev_wean_idx ON ev_wean (
@@ -373,7 +407,9 @@ CREATE TABLE ev_partial_wean (
   CHECK (animals > 0),
   CHECK (weight >= 0),
   PRIMARY KEY (id),
-  FOREIGN KEY(animal_id) REFERENCES animals(id)
+  FOREIGN KEY(animal_id) REFERENCES animals(id),
+  FOREIGN KEY(race_id) REFERENCES races(id),
+  FOREIGN KEY(worker_id) REFERENCES workers(id)
 ) INHERITS (events);
 
 CREATE UNIQUE INDEX ev_partial_wean_idx ON ev_partial_wean (
@@ -397,7 +433,9 @@ CREATE TABLE ev_semen (
   CHECK (motility IN (0, 1, 2, 3, 4, 5)),
   CHECK (dosis >= 0),
   PRIMARY KEY (id),
-  FOREIGN KEY(animal_id) REFERENCES animals(id)
+  FOREIGN KEY(animal_id) REFERENCES animals(id),
+  FOREIGN KEY(race_id) REFERENCES races(id),
+  FOREIGN KEY(worker_id) REFERENCES workers(id)
 ) INHERITS (events);
 
 CREATE UNIQUE INDEX ev_semen_idx ON ev_semen (
@@ -414,7 +452,9 @@ CREATE TABLE ev_ubication (
   ubication VARCHAR(15) NOT NULL,
   CHECK (TRIM(ubication) <> '' AND ubication !~* '[^a-z0-9 :.,/()#-]+'),
   PRIMARY KEY (id),
-  FOREIGN KEY(animal_id) REFERENCES animals(id)
+  FOREIGN KEY(animal_id) REFERENCES animals(id),
+  FOREIGN KEY(race_id) REFERENCES races(id),
+  FOREIGN KEY(worker_id) REFERENCES workers(id)
 ) INHERITS (events);
 
 CREATE UNIQUE INDEX ev_ubication_idx ON ev_ubication (
@@ -430,7 +470,9 @@ CREATE TABLE ev_feed (
   weight NUMERIC(4,2) NOT NULL,
   CHECK (weight >= 0),
   PRIMARY KEY (id),
-  FOREIGN KEY(animal_id) REFERENCES animals(id)
+  FOREIGN KEY(animal_id) REFERENCES animals(id),
+  FOREIGN KEY(race_id) REFERENCES races(id),
+  FOREIGN KEY(worker_id) REFERENCES workers(id)
 ) INHERITS (events);
 
 CREATE UNIQUE INDEX ev_feed_idx ON ev_feed (
@@ -450,7 +492,9 @@ CREATE TABLE ev_condition (
   CHECK (weight >= 0),
   CHECK (backfat >= 0),
   PRIMARY KEY (id),
-  FOREIGN KEY(animal_id) REFERENCES animals(id)
+  FOREIGN KEY(animal_id) REFERENCES animals(id),
+  FOREIGN KEY(race_id) REFERENCES races(id),
+  FOREIGN KEY(worker_id) REFERENCES workers(id)
 ) INHERITS (events);
 
 CREATE UNIQUE INDEX ev_condition_idx ON ev_condition (
@@ -468,7 +512,9 @@ CREATE TABLE ev_milk (
   CHECK (weight >= 0),  -- 0 = end
   CHECK (quality IN(1, 2, 3, 4, 5)),
   PRIMARY KEY (id),
-  FOREIGN KEY(animal_id) REFERENCES animals(id)
+  FOREIGN KEY(animal_id) REFERENCES animals(id),
+  FOREIGN KEY(race_id) REFERENCES races(id),
+  FOREIGN KEY(worker_id) REFERENCES workers(id)
 ) INHERITS (events);
 
 CREATE UNIQUE INDEX ev_milk_idx ON ev_milk (
@@ -482,7 +528,9 @@ CREATE UNIQUE INDEX ev_milk_idx ON ev_milk (
 -- ****************
 CREATE TABLE ev_dry (
   PRIMARY KEY (id),
-  FOREIGN KEY(animal_id) REFERENCES animals(id)
+  FOREIGN KEY(animal_id) REFERENCES animals(id),
+  FOREIGN KEY(race_id) REFERENCES races(id),
+  FOREIGN KEY(worker_id) REFERENCES workers(id)
 ) INHERITS (events);
 
 CREATE UNIQUE INDEX ev_dry_idx ON ev_dry (
@@ -498,7 +546,9 @@ CREATE TABLE ev_temperature (
   temperature NUMERIC(4,2) NOT NULL,
   CHECK (temperature > 0 AND temperature < 50),
   PRIMARY KEY (id),
-  FOREIGN KEY(animal_id) REFERENCES animals(id)
+  FOREIGN KEY(animal_id) REFERENCES animals(id),
+  FOREIGN KEY(race_id) REFERENCES races(id),
+  FOREIGN KEY(worker_id) REFERENCES workers(id)
 ) INHERITS (events);
 
 CREATE UNIQUE INDEX ev_temperature_idx ON ev_temperature (
@@ -506,7 +556,7 @@ CREATE UNIQUE INDEX ev_temperature_idx ON ev_temperature (
   id ASC
 );
 
-
+/*
 -- ****************
 -- ev_treatment
 -- ****************
@@ -522,26 +572,29 @@ CREATE TABLE ev_treatment (
   CHECK (days > 0),
   CHECK (route IN ('im', 'iv', 'ip', 'sc', 'po')),
   PRIMARY KEY (id),
-  FOREIGN KEY(animal_id) REFERENCES animals(id)
+  FOREIGN KEY(animal_id) REFERENCES animals(id),
+  FOREIGN KEY(race_id) REFERENCES races(id),
+  FOREIGN KEY(worker_id) REFERENCES workers(id)
 ) INHERITS (events);
 
 CREATE UNIQUE INDEX ev_treatment_idx ON ev_treatment (
   animal_id ASC,
   id ASC
 );
+*/
 
-
--- ****************
--- ev_palpation
--- ****************
-CREATE TABLE ev_palpation (
-  palpation VARCHAR(100) NOT NULL,
-  CHECK (TRIM(palpation) <> '' AND palpation !~* '[^a-z0-9 :.,/()#-]+'),
+CREATE TABLE ev_disease (
+  disease VARCHAR(15) NOT NULL,
+  treatment VARCHAR(30) NOT NULL,
+  CHECK (TRIM(disease) <> '' AND disease !~* '[^a-z0-9 ]+'),
+  CHECK (TRIM(treatment) <> '' AND treatment !~* '[^a-z0-9 .]+'),
   PRIMARY KEY (id),
-  FOREIGN KEY(animal_id) REFERENCES animals(id)
+  FOREIGN KEY(animal_id) REFERENCES animals(id),
+  FOREIGN KEY(race_id) REFERENCES races(id),
+  FOREIGN KEY(worker_id) REFERENCES workers(id)
 ) INHERITS (events);
 
-CREATE UNIQUE INDEX ev_palpation_idx ON ev_palpation (
+CREATE UNIQUE INDEX ev_disease_idx ON ev_disease (
   animal_id ASC,
   id ASC
 );
@@ -554,7 +607,9 @@ CREATE TABLE ev_note (
   note VARCHAR(100) NOT NULL,
   CHECK (TRIM(note) <> '' AND note !~* '[^a-z0-9 :.,/()#-]+'),
   PRIMARY KEY (id),
-  FOREIGN KEY(animal_id) REFERENCES animals(id)
+  FOREIGN KEY(animal_id) REFERENCES animals(id),
+  FOREIGN KEY(race_id) REFERENCES races(id),
+  FOREIGN KEY(worker_id) REFERENCES workers(id)
 ) INHERITS (events);
 
 CREATE UNIQUE INDEX ev_note_idx ON ev_note (
@@ -564,8 +619,30 @@ CREATE UNIQUE INDEX ev_note_idx ON ev_note (
 
 
 /******************************************************************/
+
+
+CREATE TABLE events_querys (
+  id SERIAL PRIMARY KEY NOT NULL,
+  lft INTEGER NOT NULL,
+  rgt INTEGER NOT NULL,
+  title VARCHAR(100) UNIQUE NOT NULL,
+  tbl TEXT DEFAULT NULL,
+  var TEXT DEFAULT NULL,
+  rnd INTEGER DEFAULT NULL,
+  agg BOOLEAN DEFAULT NULL,
+  CHECK (lft > 0),
+  CHECK (rgt > 0),
+  CHECK (TRIM(title) <> '' AND title !~* '[^a-z0-9 @#&()"'';:,.%<>=/*+-]+'),
+  CHECK (TRIM(tbl) <> '' AND tbl !~* '[^a-z0-9 _\]\[{}()"'';:,.&|?!~$%<>=/*+-\\^]+'),
+  CHECK (TRIM(var) <> '' AND var !~* '[^a-z0-9 _\]\[{}()"'';:,.&|?!~$%<>=/*+-\\^]+'),
+  CHECK (rnd >= 0 AND rnd <=4)
+);
+
+
+/******************************************************************/
 /*************************** QUERIES ******************************/
 /******************************************************************/
+
 /*
 -- animal information
 SELECT animal_rules_function(12);
