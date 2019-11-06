@@ -1,0 +1,337 @@
+<script>
+function set_table_head($table, head) {
+  var $thead = $table.find("thead"),
+      filters=$.map(head, function(x){ return '<input type="text" size="5" />'; });
+  $thead.html('<tr><th>' + head.join('</th><th>') + '</th></tr>');
+  $thead.append('<tr><th>' + filters.join('</th><th>') + '</th></tr>');
+  if (!$table.closest('div').hasClass('modal-body')) {
+    $table.stickyTableHeaders("destroy");
+    $table.stickyTableHeaders({fixedOffset: $("nav.navbar").height()});
+  }
+}
+
+///////////////////////////// TABLE LOCAL /////////////////////////////
+// SORT ARRAY
+//var dp = /^(\d{2})[\/\- ](\d{2})[\/\- ](\d{4})/;
+//a.match(dp) -> a.replace(dp,'$3$2$1')
+//b.match(dp) -> b.replace(dp,'$3$2$1')
+function cp(a,b){
+  var c=a.match(/^\d{4}\-\d{2}\-\d{2}/)?a:parseFloat(a.replace(/\$|\,/g,'')) || a.toLowerCase(),
+      d=b.match(/^\d{4}\-\d{2}\-\d{2}/)?b:parseFloat(b.replace(/\$|\,/g,'')) || b.toLowerCase();
+  return (c>d)?1:(c<d)?-1:0;
+}
+
+function set_table_actions($table) {
+  // SORT TABLE
+  $table.find("thead").on("click", "tr:first > th", function() {
+    var body = $table.data("body");
+    if($(this).hasClass("success") || $(this).hasClass("warning")) {
+      body.reverse();
+      $(this).toggleClass("success warning");
+    } else {
+      var index = $(this).index();
+      body.sort(function(a,b) { return cp(stripHtml(String(a[index])),
+                                          stripHtml(String(b[index]))); });
+      $table.find("thead tr:first th").removeClass("success warning");
+      $(this).addClass("success");
+    }
+    $table.data("body", body);
+    var rows = body.slice(0);
+    $.map($table.find("thead input"), function(item, index){
+      var i=0, value=$(item).val().toLowerCase();
+      if (value) {
+        while (i < rows.length) {
+          if (stripHtml(String(rows[i][index])).toLowerCase().indexOf(value) > -1) i++;
+          else rows.splice(i, 1);
+        }
+      }
+    });
+    set_table_body($table, {"body": rows}, false, false);
+  });
+
+  // FILTER TABLE
+  $table.find("thead").on("keyup", "tr:last > th > input", function() {
+    var rows = $table.data("body").slice(0);
+    $.map($table.find("thead input"), function(item, index){
+      var i=0, value=$(item).val().toLowerCase();
+      if (value) {
+        while (i < rows.length) {
+          if (stripHtml(String(rows[i][index])).toLowerCase().indexOf(value) > -1) i++;
+          else rows.splice(i, 1);
+        }
+      }
+    });
+    set_table_body($table, {"body": rows}, false, false);
+  });
+
+  // SELECT TABLE
+  $table.find("tbody").on("click", "tr", function() {
+    $(this).toggleClass("danger");
+    var rows = $table.data("rows_selected"),
+        row = $.map($(this).find("td"), function(td){
+                var input = $(td).find("input");
+                return input.length?input.val():$(td).text();
+              });
+    if ($(this).hasClass("danger")) rows[row[0]] = row;
+    else delete rows[row[0]];
+    $table.data("rows_selected", rows);
+  });
+/*
+  var ids = $.map($("#table tbody tr.danger"), function(tr){
+              return $(tr).find("td:first").text();
+            });
+  var rows = $.map($("#table tbody tr.danger"), function(tr){
+               return [$.map($(tr).find("td"), function(td){ return $(td).text(); })];
+             });
+*/
+
+  // XLS
+  // TODO xls in tabs
+  $table.find("caption").on("click", "button[name='xls']", function() {
+    var rows=$.map($table.data("body").concat($table.data("last")), function(r){
+               return [$.map(r, function(x){
+                 var y = (typeof x === 'string')?stripHtml(x):String(x);
+                 return y.match(/^\d{4}\-\d{2}\-\d{2}/)?y:parseFloat(y.replace(/\$|\,/g,'')) || y;
+               })];
+             });
+    exportXLS($.map($table.find("thead tr:first th"), function(z){ return $(z).text(); }), rows);
+  });
+}
+
+function set_table_body($table, tmp, start, paginate) {
+  if (!paginate && !tmp["body"].length) {
+    alert("sin resultados!");
+    $table.find("tbody").empty();
+  } else {
+    if (!$table.data("head")) {
+      $table.data("head", true);
+      set_table_head($table, tmp["head"]);
+      set_table_actions($table);
+    }
+    if (start) {
+      $table.data("body", tmp["body"]);
+      $table.data("foot", tmp["foot"]);
+      $table.data("last", [tmp["foot"][0].slice(0)]);
+      $table.data("rows_selected", {});
+      $table.find("thead tr:first th").removeClass("success warning");
+    }
+    if (!paginate) {
+      var foot=$table.data("foot"), values={}, last=[];
+      for (var k in tmp["body"]) {
+        for (var i=0; i<foot[1].length; ++i) {
+          if (foot[1][i] != "" && tmp["body"][k][i] && tmp["body"][k][i] != "") {
+            if (!values[i]) values[i] = [];
+            if (typeof tmp["body"][k][i] === 'number') values[i].push(tmp["body"][k][i]);
+            else values[i].push(Number(stripHtml(tmp["body"][k][i]).replace(/,/g, "")) || 0);
+          }
+        }
+      }
+      for (var i=0; i<foot[1].length; ++i) {
+        if (!values[i]) values[i] = [0];
+        if (foot[1][i] != "") {
+          switch(foot[1][i]) {
+            case "sum": last[i] = values[i].reduce(function(a,b){ return a + b; }); break;
+            case "avg": last[i] = values[i].reduce(function(a,b){ return a + b; }) /
+                                  values[i].length; break;
+            case "min": last[i] = values[i].reduce(function(a,b){ return (a < b)?a:b; }); break;
+            case "max": last[i] = values[i].reduce(function(a,b){ return (a > b)?a:b; }); break;
+            case "count": last[i] = values[i].length; break;
+          }
+          last[i] = formatCurrency(last[i], (foot[1][i] == "count")?0:2);
+        } else {
+          last[i] = "";
+        }
+      }
+      $table.data("rows", tmp["body"].slice(0));
+      $table.data("last", [last]);
+    }
+    var rows = $table.data("rows"),
+        last = $table.data("last"),
+        begin = 0, end = rows.length,
+        $ul = $table.find("caption ul.pagination"),
+        keys_selected = Object.keys($table.data("rows_selected") || {});
+    if ($ul.length) {
+      var count = rows.length,
+          lines = parseInt($table.find("select[name='lines']").val(), 10) || count,
+          pages = Math.ceil(count / lines),
+          page = Math.min($ul.pagination("getCurrentPage"), pages);
+      begin = Math.max(page - 1, 0) * lines;
+      end = begin + lines;
+      $ul.pagination("updateItems", count);
+      if ($ul.pagination("getPagesCount") != pages) {
+        $ul.pagination("updateItemsOnPage", lines);
+        $ul.pagination("selectPage", page);
+      }
+    }
+    $table.find("tbody").html($.map(rows.slice(begin, end), function(row){
+      var i = keys_selected.indexOf(stripHtml(String(row[0])));
+      return '<tr'+ ((i > -1)?' class="danger"':'') +'><td>'+ row.join('</td><td>') +'</td></tr>';
+    }).join(""));
+    if (rows.length <= end) {
+      $table.find("tfoot").html($.map(last, function(row){
+        return '<tr><th>' + row.join('</th><th>') + '</th></tr>';
+      }).join(""));
+    } else {
+      $table.find("tfoot").empty();
+    }
+  }
+}
+
+function set_table_local($table, all_lines) {
+  var $caption = $table.find("caption");
+  $caption.html('<div class="btn-group paginate" role="group" aria-label="...">' +
+                '  <div class="btn-group" role="group">' +
+                '    <p class="form-control-static"><strong>Lineas</strong></p>' +
+                '  </div>' +
+                '  <div class="btn-group" role="group">' +
+                '    <select class="form-control" name="lines">' +
+                '      <option'+(all_lines?"":" selected")+'>10</option>' +
+                '      <option>50</option>' +
+                '      <option>150</option>' +
+                '      <option>450</option>' +
+                '      <option value="all"'+(all_lines?" selected":"")+'>todo</option>'+
+                '    </select>' +
+                '  </div>' +
+                '  <div class="btn-group" role="group">' +
+                '    <ul class="pagination" style="margin:0;"></ul>' +
+                '  </div>' +
+                '  <div class="btn-group" role="group">' +
+                '    <button class="btn btn-info" name="xls">xls</button>' +
+                '  </div>' +
+                '</div>');
+  $caption.find("select[name='lines']").change(function(){
+    set_table_body($table, {}, false, true);
+  });
+  $caption.find("ul.pagination").pagination({
+    displayedPages: 3, edges: 1, prevText: "", nextText: "",
+    onPageClick: function(p, e){ if (e) set_table_body($table, {}, false, true); }
+  });
+  $table.data("head", false);
+}
+
+function set_table(rs) {
+  var $table = $('<table class="table table-striped resumen">' +
+                 '  <caption></caption>' +
+                 '  <thead></thead>' +
+                 '  <tbody></tbody>' +
+                 '  <tfoot></tfoot>' +
+                 '</table>');
+  set_table_local($table, rs["all_lines"]);
+  set_table_body($table, rs, true, false);
+  return $table;
+}
+
+
+///////////////////////////// TABLE AJAX /////////////////////////////
+function set_table_ajax_body($table) {
+  var pd = new FormData(),
+      $ul = $table.find("caption ul.pagination");
+      lines = parseInt($table.find("select[name='lines']").val(), 10),
+      page = $ul.pagination("getCurrentPage"),
+      filter = $table.data("filter")?JSONfn.parse($table.data("filter")):{};
+  pd.append("action", $table.data("action"));
+  pd.append("sort_col", $table.data("sort_col"));
+  pd.append("sort_dir", $table.data("sort_dir"));
+  pd.append("filter", $table.data("filter"));
+  pd.append("lines", lines);
+  pd.append("page", page);
+  request(db_url, pd, function(rs){
+    if (!rs["body"].length){
+      alert("sin resultados!");
+      $table.find("tbody").empty();
+    } else {
+      $ul.pagination("updateItems", rs["count"]);
+      if ($ul.pagination("getPagesCount") != Math.ceil(rs["count"] / lines)) {
+        $ul.pagination("updateItemsOnPage", lines);
+        $ul.pagination("selectPage", page);
+      }
+      if (!$table.data("head")) {
+        set_table_head($table, rs["head"]);
+        $table.find("thead tr:first th:eq(" + $table.data("sort_col") + ")")
+              .addClass(($table.data("sort_dir").toLowerCase()=="asc")?"success":"warning");
+        $table.data("head", true);
+      }
+      for (var k in filter) {
+        var $input = $table.find("thead input:eq(" + k + ")");
+        if ($input.val() != filter[k]) $input.val(filter[k]);
+      }
+      $table.find("tbody").html($.map(rs["body"], function(row){
+        return '<tr><td>' + row.join('</td><td>') + '</td></tr>';
+      }).join(""));
+//      $table.find("tfoot").html('<tr><th>' + rs["foot"][0].join('</th><th>') + '</th></tr>');
+    }
+  });
+}
+
+function set_table_ajax($table, data) {
+  var $caption = $table.find("caption");
+  $caption.append('<div class="btn-group paginate" role="group" aria-label="...">' +
+                  '  <div class="btn-group" role="group">' +
+                  '    <p class="form-control-static"><strong>Lineas</strong></p>' +
+                  '  </div>' +
+                  '  <div class="btn-group" role="group">' +
+                  '    <select class="form-control" name="lines">' +
+                  '      <option>10</option>' +
+                  '      <option>50</option>' +
+                  '      <option>150</option>' +
+                  '      <option>450</option>' +
+                  '      <option value="all">todo</option>' +
+                  '    </select>' +
+                  '  </div>' +
+                  '  <div class="btn-group" role="group">' +
+                  '    <ul class="pagination" style="margin:0;"></ul>' +
+                  '  </div>' +
+                  '</div>');
+  $caption.find("select[name='lines']").change(function(){
+    set_table_ajax_body($table);
+  });
+  $caption.find("ul.pagination").pagination({
+    displayedPages: 3, edges: 1, prevText: "", nextText: "",
+    onPageClick: function(p, e){ if (e) set_table_ajax_body($table); }
+  });
+  $table.data("filter", JSONfn.stringify(data["filter"]));
+  $table.data("sort_col", data["sort_col"]);
+  $table.data("sort_dir", data["sort_dir"]);
+  $table.data("head", false);
+}
+
+$(function() {
+  // SORT TABLE AJAX
+  $("table.resumen_ajax > thead").on("click", "tr:first > th", function() {
+    var $table = $(this).parents("table"),
+        direction = "";
+    if($(this).hasClass("success") || $(this).hasClass("warning")) {
+      $(this).toggleClass("success warning");
+      direction = $(this).hasClass("success")?"ASC":"DESC";
+    } else {
+      $table.find("thead tr:first th").removeClass("success warning");
+      $(this).addClass("success");
+      direction = "ASC";
+    }
+    $table.data("sort_col", $(this).index());
+    $table.data("sort_dir", direction);
+    set_table_ajax_body($table);
+  });
+
+  // FILTER TABLE AJAX
+  var resumen_timer=null;
+  $("table.resumen_ajax > thead").on("keyup", "tr:last > th > input", function() {
+    var $table = $(this).parents("table"),
+        filter = {};
+    window.clearTimeout(resumen_timer);
+    resumen_timer = window.setTimeout(function() {
+      $.map($table.find("thead input"), function(item, index){
+        var value=$(item).val();
+        if (value) filter[index] = value;
+      });
+      $table.data("filter", JSONfn.stringify(filter));
+      set_table_ajax_body($table);
+    }, 800);
+  });
+
+  // SELECT TABLE AJAX
+  $("table.resumen_ajax tbody").on("click", "tr", function() {
+    $(this).toggleClass("danger");
+  });
+});
+</script>
